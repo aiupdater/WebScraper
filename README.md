@@ -1,8 +1,8 @@
 # WebScraper · WLW.de / 11880.com
 
-Společný kontext pro vývojové chaty je v [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md),
-trvalá pravidla v [AGENTS.md](AGENTS.md) a dlouhodobá rozhodnutí v
-[DECISIONS.md](DECISIONS.md).
+Společný kontext a dlouhodobá rozhodnutí pro vývojové chaty jsou uklizené v
+[`docs/project/`](docs/project/). Kořenový [AGENTS.md](AGENTS.md) zůstává na
+technicky nutném místě, aby jeho pravidla Codex automaticky načetl pro celý repozitář.
 
 ## Spuštění
 
@@ -66,9 +66,11 @@ Pro pokračování vyberte stejnou složku, stejný vstup a stejné zadání. Ce
 | `system/` | Python backend a vstupní bod aplikace |
 | `ui/` | HTML, JavaScript, styly a logo |
 | `docs/` | Podrobné návody a technická dokumentace |
+| `docs/project/` | Společný kontext a dlouhodobá rozhodnutí pro vývojové chaty |
 | `tests/` | Automatické testy; náhledy rozhraní v `tests/artifacts/` |
 | `.venv/` | Nainstalované Python prostředí |
 | `.ui-state/` | Místní stav desktopového rozhraní |
+| `AGENTS.md` | Automaticky načítaná pravidla Codexu; kvůli platnosti pro celý projekt musí zůstat v kořeni |
 
 Nastavení připojení měňte v aplikaci. Soubor `config/mysql.local.json` obsahuje
 soukromé přihlašovací údaje; neposílejte jej spolu se zdrojovým kódem.

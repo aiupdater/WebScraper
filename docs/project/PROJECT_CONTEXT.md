@@ -2,7 +2,7 @@
 
 Aktualizováno: 30. 9. 2026
 
-Tento soubor je stručný aktuální přehled pro všechny chaty pracující v tomto repozitáři. Pravidla práce jsou v `AGENTS.md`; důvody dlouhodobých rozhodnutí jsou v `DECISIONS.md`. Při rozporu se vždy ověří skutečný stav zdrojového kódu a testů.
+Tento soubor je stručný aktuální přehled pro všechny chaty pracující v tomto repozitáři. Pravidla práce jsou v kořenovém `AGENTS.md`; důvody dlouhodobých rozhodnutí jsou v `docs/project/DECISIONS.md`. Při rozporu se vždy ověří skutečný stav zdrojového kódu a testů.
 
 ## Cíl produktu
 
@@ -55,4 +55,4 @@ Testy používají `tempfile` a na omezeném Windows hostu mohou skončit `Permi
 
 ## Jak tento soubor udržovat
 
-Aktualizuj pouze současnou pravdu: účel, komponenty, zachovávané smlouvy, ověřený stav, známá omezení a bezprostřední priority. Historické důvody patří do `DECISIONS.md`; detailní návody do `README.md` nebo `docs/`; běžný průběh práce zůstává v chatu a Git historii.
+Aktualizuj pouze současnou pravdu: účel, komponenty, zachovávané smlouvy, ověřený stav, známá omezení a bezprostřední priority. Historické důvody patří do `docs/project/DECISIONS.md`; detailní návody do `README.md` nebo ostatních souborů v `docs/`; běžný průběh práce zůstává v chatu a Git historii.

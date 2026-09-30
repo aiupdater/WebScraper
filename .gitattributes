@@ -1,0 +1,5 @@
+# Jednotne konce radku nezavisle na globalnim nastaveni Git ve Windows.
+* text=auto eol=lf
+
+# Davkove spousteci soubory jsou urcene pro Windows cmd.exe.
+*.bat text eol=crlf

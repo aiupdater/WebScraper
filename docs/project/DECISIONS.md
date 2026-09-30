@@ -6,7 +6,7 @@ Tento soubor zachycuje rozhodnutí, která mají ovlivnit více budoucích úkol
 
 - Datum: 30. 9. 2026
 - Stav: platí
-- Rozhodnutí: Každý chat pracující na repozitáři načte `AGENTS.md`, `PROJECT_CONTEXT.md` a relevantní záznamy tohoto souboru. Po významné změně aktualizuje společný kontext a případně přidá nové rozhodnutí.
+- Rozhodnutí: Každý chat pracující na repozitáři načte kořenový `AGENTS.md`, `docs/project/PROJECT_CONTEXT.md` a relevantní záznamy tohoto souboru. Po významné změně aktualizuje společný kontext a případně přidá nové rozhodnutí.
 - Důvod: Historie jednotlivých chatů je oddělená a automatická paměť nemusí být okamžitá ani úplná. Verzionované soubory poskytují všem chatům stejnou kontrolovatelnou výchozí pravdu.
 - Důsledek: Do těchto dokumentů se nezapisují přepisy chatů ani každá drobná změna. Stav musí být stručný, aktuální a ověřitelný proti repozitáři.
 
@@ -33,3 +33,11 @@ Tento soubor zachycuje rozhodnutí, která mají ovlivnit více budoucích úkol
 - Rozhodnutí: Úspěch lze deklarovat jen na základě odpovídajícího ověření. Unit testy, UI smoke, desktop smoke, živý portál a produkční MySQL jsou různé úrovně důkazu a nesmějí se zaměňovat.
 - Důvod: `Ran 0 tests`, statický audit nebo chyba prostředí nepotvrzují funkční stav aplikace.
 - Důsledek: Každé předání uvede skutečně spuštěné kontroly, jejich výsledek a neověřené oblasti.
+
+## D-005: Projektová paměť patří do `docs/project/`, kořenový `AGENTS.md` je technická výjimka
+
+- Datum: 30. 9. 2026
+- Stav: platí
+- Rozhodnutí: Společný kontext a dlouhodobá rozhodnutí jsou uložené v `docs/project/`. V kořeni zůstává pouze stručný `AGENTS.md`, protože Codex jej odtud automaticky načítá pro celý repozitář.
+- Důvod: Kořen aplikace má zůstat čistý a přehledný, aniž by se zrušilo automatické předávání pravidel budoucím chatům.
+- Důsledek: Další projektové dokumenty tohoto typu se ukládají do `docs/project/`; odkazy v `AGENTS.md`, `README.md` a dokumentačním přehledu musí zůstat aktuální.
