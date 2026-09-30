@@ -8,17 +8,122 @@
     manual:false, tab:'results', total:0, logs:[], lastError:'', detail:null, resume:false,
     hasStoppedData:false, isCompleted:false, categories:[], selected:new Set(), categoryBusy:false};
   let api, polling = false, initializing = false, renderTimer, toastTimer, folderTimer, folderInfoRequest = 0;
+  let startupFinished = false, startupDatabaseResolved = false, resolveStartupDatabase;
+  const startupDatabase = new Promise(resolve => { resolveStartupDatabase = resolve; });
+
+  function startupProgress(percent, phase, stage) {
+    const value = Math.max(0, Math.min(100, Math.round(percent)));
+    const progress = $('startup-progress');
+    if (!progress || startupFinished) return;
+    progress.setAttribute('aria-valuenow', String(value));
+    $('startup-progress-bar').style.width = `${value}%`;
+    $('startup-percent').value = `${value} %`;
+    $('startup-percent').textContent = `${value} %`;
+    if (phase) $('startup-phase').textContent = phase;
+    const order = ['ui','python','config','database'];
+    const activeIndex = Math.max(0, order.indexOf(stage));
+    document.querySelectorAll('[data-startup-stage]').forEach(item => {
+      const index = order.indexOf(item.dataset.startupStage);
+      item.classList.toggle('done', index < activeIndex || value === 100);
+      item.classList.toggle('active', index === activeIndex && value < 100);
+    });
+  }
+
+  function settleStartupDatabase(result) {
+    if (startupDatabaseResolved) return;
+    startupDatabaseResolved = true;
+    resolveStartupDatabase(result);
+  }
+
+  function revealApplication(phase = 'Aplikace je připravená.') {
+    if (startupFinished) return;
+    startupProgress(100, phase, 'database');
+    startupFinished = true;
+    const loader = $('startup-loader');
+    const shell = $('application-shell');
+    shell?.removeAttribute('aria-hidden');
+    document.body.classList.remove('app-loading');
+    document.body.classList.add('app-ready');
+    if (loader) {
+      loader.classList.add('is-leaving');
+      const remove = () => loader.remove();
+      if (document.documentElement.classList.contains('motion-reduced') || matchMedia('(prefers-reduced-motion: reduce)').matches) remove();
+      else setTimeout(remove, 520);
+    }
+  }
+
+  function startupTimeout() {
+    if (startupFinished) return;
+    startupProgress(92, 'Připojení trvá déle. Do aplikace můžete pokračovat a stav zkontrolovat v nastavení.', 'database');
+    const button = $('startup-continue');
+    if (button) button.hidden = false;
+  }
+
+  startupProgress(12, 'Načítám uživatelské rozhraní…', 'ui');
+  setTimeout(startupTimeout, 10000);
+
+  const reducedMotion = () => document.documentElement.classList.contains('motion-reduced') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function openDialog(dialog) {
+    if (!dialog || dialog.open) return;
+    dialog.classList.remove('is-closing');
+    dialog.showModal();
+  }
+  function closeDialog(dialog) {
+    if (!dialog?.open || dialog.classList.contains('is-closing')) return;
+    if (reducedMotion()) { dialog.close(); return; }
+    dialog.classList.add('is-closing');
+    const finish = () => {
+      if (!dialog.classList.contains('is-closing')) return;
+      dialog.classList.remove('is-closing');
+      if (dialog.open) dialog.close();
+    };
+    dialog.addEventListener('animationend', finish, {once:true});
+    setTimeout(finish, 260);
+  }
 
   function notice(title, text) {
     $('notice-title').textContent = title;
     $('notice-text').textContent = text;
-    if (!$('notice-dialog').open) $('notice-dialog').showModal();
+    openDialog($('notice-dialog'));
+  }
+  function confirmAction(title, text, actionLabel) {
+    return new Promise(resolve => {
+      const dialog = $('confirm-dialog');
+      const accept = $('confirm-accept');
+      const cancel = $('confirm-cancel');
+      const close = $('confirm-close');
+      $('confirm-title').textContent = title;
+      $('confirm-text').textContent = text;
+      accept.textContent = actionLabel;
+      const finish = value => {
+        accept.removeEventListener('click', onAccept);
+        cancel.removeEventListener('click', onCancel);
+        close.removeEventListener('click', onCancel);
+        dialog.removeEventListener('cancel', onCancel);
+        closeDialog(dialog);
+        resolve(value);
+      };
+      const onAccept = () => finish(true);
+      const onCancel = event => { event?.preventDefault?.(); finish(false); };
+      accept.addEventListener('click', onAccept);
+      cancel.addEventListener('click', onCancel);
+      close.addEventListener('click', onCancel);
+      dialog.addEventListener('cancel', onCancel);
+      openDialog(dialog);
+      cancel.focus();
+    });
   }
   function toast(text) {
     clearTimeout(toastTimer);
-    $('toast').textContent = text;
-    $('toast').hidden = false;
-    toastTimer = setTimeout(() => $('toast').hidden = true, 2600);
+    const element = $('toast');
+    element.classList.remove('is-leaving');
+    element.textContent = text;
+    element.hidden = false;
+    toastTimer = setTimeout(() => {
+      if (reducedMotion()) { element.hidden = true; return; }
+      element.classList.add('is-leaving');
+      setTimeout(() => { element.hidden = true; element.classList.remove('is-leaving'); }, 220);
+    }, 2600);
   }
   async function call(name, ...args) {
     if (!api) return {ok:false, message:'Rozhraní zatím není připojené k Pythonu.'};
@@ -265,7 +370,7 @@
   }
   async function discardSavedRun() {
     if (state.running || state.starting) return;
-    if (!confirm('Opravdu zrušit tento běh a zahodit veškerá načtená data?')) return;
+    if (!await confirmAction('Zahodit uložený běh?', 'Veškerá načtená data tohoto nedokončeného běhu budou trvale odstraněna. Tuto akci nelze vrátit.', 'Zahodit běh')) return;
     state.starting = true; controls();
     const result = await call('discard_saved_run', $('folder').value);
     state.starting = false;
@@ -282,7 +387,8 @@
   }
   async function connect() {
     if (state.running || state.dbBusy) return;
-    if (!state.settings.has_password) { openSettings(); return; }
+    startupProgress(78, 'Připojuji EmailApp a načítám skupiny…', 'database');
+    if (!state.settings.has_password) { settleStartupDatabase('settings'); openSettings(); return; }
     state.dbBusy = true; controls();
     if ($('db-status')) $('db-status').textContent = 'Připojuji a načítám skupiny…';
     if ($('db-dot')) $('db-dot').className = 'status-dot active';
@@ -293,6 +399,7 @@
       if ($('db-dot')) $('db-dot').className = 'status-dot failed';
       if ($('db-status')) $('db-status').textContent = 'Připojení se nezdařilo';
       if ($('mysql-toggle')) $('mysql-toggle').title = 'Nastavení MySQL · Připojení se nezdařilo';
+      settleStartupDatabase('error');
       notice('Připojení k EmailApp',result.message);
     }
   }
@@ -304,7 +411,7 @@
     $('password-hint').textContent = 'Heslo se ukládá do místního nastavení připojení.';
     $('settings-error').hidden = true; $('ca-field').hidden = !$('db-tls').checked;
     updateSaveBestEmail();
-    $('settings-dialog').showModal();
+    openDialog($('settings-dialog'));
     const result = await call('settings_password');
     if(result.ok && $('settings-dialog').open && !$('db-password').value) $('db-password').value = result.password;
   }
@@ -316,7 +423,7 @@
     values.password = ''; $('db-password').value = ''; $('save-settings').disabled = false;
     if (!result.ok) { $('settings-error').textContent = result.message; $('settings-error').hidden = false; return; }
     state.settings = result.settings; state.groupsLoaded = false;
-    $('group').replaceChildren(new Option('⚪ Bez skupiny (výchozí)','')); $('settings-dialog').close();
+    $('group').replaceChildren(new Option('⚪ Bez skupiny (výchozí)','')); closeDialog($('settings-dialog'));
     updateGroupBadge();
     await connect();
   }
@@ -337,6 +444,9 @@
     if (filter === 'errors' && !['ERROR','PARTIAL'].includes(d.status) && d.delivery !== 'PENDING') return false;
     return [record.url, ...emails, d.website, d.skipped_email, ...(d.skipped_existing||[]), ...(d.origins||[]).map(o=>o.category), statusOf(record)[0]]
       .join(' ').toLocaleLowerCase('cs').includes($('search').value.trim().toLocaleLowerCase('cs'));
+  }
+  function updateSearchClear() {
+    $('search-clear').hidden = !$('search').value;
   }
   function addText(parent, tag, text, className) {
     const el = document.createElement(tag); el.textContent = text ?? '';
@@ -387,7 +497,7 @@
       ['Podrobnosti',d.detail],['Další nalezené adresy',(d.candidates||[]).join(', ')]]
       .filter(([,value])=>value).forEach(([title,value])=> {addText($('detail-content'),'dt',title);addText($('detail-content'),'dd',value);});
     $('copy-detail').textContent = emails ? 'Kopírovat e-maily' : 'Kopírovat adresu webu';
-    $('detail-dialog').showModal();
+    openDialog($('detail-dialog'));
   }
   async function copyDetail() {
     if (!state.detail) return;
@@ -479,12 +589,14 @@
       if ($('db-dot')) $('db-dot').className = 'status-dot connected';
       if ($('mysql-toggle')) $('mysql-toggle').title = `Nastavení MySQL · Připojeno (${event.groups.length} skupin)`;
       if ($('connect')?.querySelector('span')) $('connect').querySelector('span').textContent = 'Obnovit skupiny';
+      settleStartupDatabase('connected');
       controls();
     } else if (event.type === 'groups_error') {
       state.dbBusy = false; state.groupsLoaded = false; controls();
       if ($('db-status')) $('db-status').textContent = 'Připojení se nezdařilo';
       if ($('db-dot')) $('db-dot').className = 'status-dot failed';
       if ($('mysql-toggle')) $('mysql-toggle').title = 'Nastavení MySQL · Připojení se nezdařilo';
+      settleStartupDatabase('error');
       appendLog(event.message); notice('Připojení k EmailApp',event.message);
     } else if (event.type === 'database') {
       if ($('db-status')) $('db-status').textContent = `Uloženo: ${number(event.counts.INSERTED)} · čeká: ${number(event.counts.PENDING)}`;
@@ -617,9 +729,17 @@
   async function init() {
     if (state.ready || initializing || typeof window.pywebview?.api?.bootstrap !== 'function') return;
     initializing = true;
+    startupProgress(30, 'Propojuji rozhraní s Pythonem…', 'python');
     api = window.pywebview.api;
     const data = await call('bootstrap');
-    if (!data.ok) { initializing = false; notice('Spuštění rozhraní',data.message); return; }
+    if (!data.ok) {
+      initializing = false;
+      startupProgress(88, data.message || 'Aplikační jádro se nepodařilo načíst.', 'python');
+      const button = $('startup-continue'); if (button) button.hidden = false;
+      notice('Spuštění rozhraní',data.message);
+      return;
+    }
+    startupProgress(58, 'Načítám nastavení, kategorie a uložený běh…', 'config');
     state.ready = true; state.settings = data.settings;
     if (data.db_connected) {
       if ($('db-dot')) $('db-dot').className = 'status-dot connected';
@@ -636,6 +756,20 @@
     controls(); folderInfo();
     setInterval(poll,180);
     if (!data.settings_error) await connect();
+    else settleStartupDatabase('settings-error');
+    const databaseResult = await Promise.race([
+      startupDatabase,
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 9000))
+    ]);
+    if (databaseResult === 'connected') {
+      startupProgress(100, 'Připojeno. Vše je připravené.', 'database');
+      setTimeout(() => revealApplication('Připojeno. Vše je připravené.'), 260);
+    } else if (databaseResult === 'timeout') {
+      startupTimeout();
+    } else {
+      startupProgress(100, 'Rozhraní je připravené. Připojení můžete dokončit v nastavení.', 'database');
+      setTimeout(() => revealApplication('Rozhraní je připravené.'), 420);
+    }
     setInterval(()=> {
       if (!state.started) return;
       const seconds=Math.floor((Date.now()-state.started)/1000);
@@ -669,9 +803,34 @@
   if ($('mysql-settings')) $('mysql-settings').addEventListener('click',openSettings);
   $('settings-form').addEventListener('submit',saveSettings);
   $('db-tls').addEventListener('change',()=> $('ca-field').hidden=!$('db-tls').checked);
-  $('settings-dialog').addEventListener('close',()=> $('db-password').value='');
-  $('preferences-toggle').addEventListener('click',()=> $('preferences-dialog').showModal());
-  document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>$(button.dataset.close).close()));
+  $('settings-dialog').addEventListener('close',()=> { $('db-password').value=''; $('db-password').type='password'; $('password-toggle').textContent='Zobrazit'; $('password-toggle').setAttribute('aria-label','Zobrazit heslo'); $('password-toggle').setAttribute('aria-pressed','false'); });
+  $('password-toggle').addEventListener('click',()=> {
+    const visible = $('db-password').type === 'text';
+    $('db-password').type = visible ? 'password' : 'text';
+    $('password-toggle').textContent = visible ? 'Zobrazit' : 'Skrýt';
+    $('password-toggle').setAttribute('aria-label', visible ? 'Zobrazit heslo' : 'Skrýt heslo');
+    $('password-toggle').setAttribute('aria-pressed', String(!visible));
+    $('db-password').focus();
+  });
+  $('preferences-toggle').addEventListener('click',()=> openDialog($('preferences-dialog')));
+  const sidebarToggle = $('sidebar-toggle');
+  const applicationShell = $('application-shell');
+  const setSidebarOpen = (open, persist = true) => {
+    applicationShell.classList.toggle('settings-collapsed', !open);
+    sidebarToggle.setAttribute('aria-expanded', String(open));
+    sidebarToggle.setAttribute('aria-label', open ? 'Skrýt nastavení sběru' : 'Zobrazit nastavení sběru');
+    sidebarToggle.title = open ? 'Skrýt nastavení sběru' : 'Zobrazit nastavení sběru';
+    sidebarToggle.classList.toggle('active', open);
+    if (persist) localStorage.setItem('webscraper-settings-open', open ? '1' : '0');
+  };
+  setSidebarOpen(localStorage.getItem('webscraper-settings-open') !== '0', false);
+  sidebarToggle.addEventListener('click', () => setSidebarOpen(sidebarToggle.getAttribute('aria-expanded') !== 'true'));
+  document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>closeDialog($(button.dataset.close))));
+  document.querySelectorAll('.app-dialog').forEach(dialog => dialog.addEventListener('cancel', event => {
+    if (dialog.id === 'confirm-dialog') return;
+    event.preventDefault();
+    closeDialog(dialog);
+  }));
   $('verify').addEventListener('click',async()=> {
     $('verify').disabled = true; const result=await call('confirm_verification');
     if (!result.ok) { notice('Ruční ověření',result.message); $('verify').disabled=false; }
@@ -683,7 +842,9 @@
   });
   $('folder').addEventListener('input',()=> {clearTimeout(folderTimer); folderTimer=setTimeout(folderInfo,300);});
   $('open-folder').addEventListener('click',async()=> {const result=await call('open_folder',$('folder').value);if(!result.ok)notice('Složka výsledků',result.message);});
-  $('search').addEventListener('input',scheduleRender); $('result-filter').addEventListener('change',render);
+  $('search').addEventListener('input',()=>{ updateSearchClear(); scheduleRender(); });
+  $('search-clear').addEventListener('click',()=>{ $('search').value=''; updateSearchClear(); render(); $('search').focus(); });
+  $('result-filter').addEventListener('change',render);
   $('results-tab').addEventListener('click',()=>changeTab('results')); $('log-tab').addEventListener('click',()=>changeTab('log'));
   document.querySelectorAll('[role="tab"]').forEach(tab=>tab.addEventListener('keydown',event=>{
     if (['ArrowRight','ArrowLeft','Home','End'].includes(event.key)) {event.preventDefault(); const name=event.key==='Home'?'results':event.key==='End'?'log':state.tab==='results'?'log':'results'; changeTab(name);$(name+'-tab').focus();}
@@ -696,6 +857,7 @@
   $('add-category').addEventListener('click',addCategory);
   $('new-category').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();addCategory();}});
   $('select-all-categories').addEventListener('click',()=>{state.selected=new Set(state.categories);renderCategories();});
+  if ($('startup-continue')) $('startup-continue').addEventListener('click', () => revealApplication('Pokračuji do aplikace.'));
   updateSaveBestEmail();
   updateVisibility();
   if (typeof window.pywebview?.api?.bootstrap === 'function') {

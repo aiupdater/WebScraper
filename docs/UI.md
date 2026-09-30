@@ -10,6 +10,8 @@ Lokální HTML/CSS rozhraní uvnitř Python okna pomocí pywebview 6.1. Scraper,
 
 ## Rozložení a ovládání
 
+- Po otevření aplikace se zobrazí úvodní obrazovka WebScraperu. Obsahuje barevnou animaci, procentní ukazatel, průběhovou lištu a živý text aktuální fáze: načtení rozhraní, propojení s Pythonem, načtení nastavení a přípravu MySQL. Dashboard se odkryje až po dokončení bootstrapu a úvodním výsledku databázového připojení.
+- Pokud připojení k MySQL selže nebo chybí nastavení, aplikace se nezablokuje. Zpřístupní dashboard a umožní připojení opravit v nastavení. Při neobvykle dlouhém startu nabídne bezpečné pokračování do aplikace.
 - Vlevo jsou obor firem, počet stránek, výstup a složka běhu. Další parametry jsou pod rozbalovacím pokročilým nastavením.
 - Skupina se zobrazuje pouze při ukládání do EmailApp. Připojení databáze se zobrazuje při tomto výstupu nebo při zapnutí kontroly známých adres.
 - Při spuštění je vybrané **EmailApp (MySQL)** a zapnuté **Přeskočit známé e-maily**. Databáze se připojí automaticky a načte skupiny. Tlačítkem připojení lze seznam obnovit. **Nastavení připojení** předvyplní uložené heslo; prázdné heslo zachová stávající. Parametry včetně hesla se ukládají do místního `config/mysql.local.json`.
@@ -20,15 +22,17 @@ Lokální HTML/CSS rozhraní uvnitř Python okna pomocí pywebview 6.1. Scraper,
 
 ## Původ vzhledu
 
-`ui/emailapp.css` přebírá konkrétní deklarace z [EmailApp/style.css](https://github.com/aiupdater/febamont-emailapp/blob/main/style.css): barvy, pozadí, karty, stíny, formulářová pole, focus efekty, řádky tabulky a tmavý režim. `ui/theme.js` adaptuje efekty přepínání motivu. `ui/app.css` přidává rozložení pro desktop scraper. Logo je lokální kopie původního loga FebaMont. Font používá stejný systémový fallback; externí Wotfard není přibalen. Rozložení není kopií webového dashboardu, ale používá jeho vizuální styl.
+Aktuální vizuální systém je zdokumentovaný v kořenovém `DESIGN.md` a vychází z lokální šablony Lineone 3.1.1, zejména z CRM Analytics dashboardu a jeho komponent. Používá Lineone paletu, navigační lištu, modulární karty, barevné stavové ikony, světlý a tmavý motiv a krátké významové animace. Poppins a Inter jsou přibalené lokálně v `ui/assets/fonts`; rozhraní proto nepotřebuje Google Fonts ani CDN.
+
+Pozorovatelné chování startu, databáze, běhu, tabulky, dialogů a animací popisuje `docs/project/UX-CONTRACT.md`. Vizuální úpravy musí zachovat DOM identifikátory používané `ui/app.js` a Python bridge.
 
 Grafika, CSS a JavaScript jsou lokální, bez CDN. Lokální HTTP server pywebview obsluhuje pouze složku `ui/`, nikoli konfiguraci MySQL. Heslo se do UI načte pouze při otevření nastavení a po zavření dialogu se pole vyprázdní. Výsledky scraperu se vykreslují jako text, nikoli HTML.
 
 ## Testování
 
-`python -m unittest discover -s tests -v` — 77 testů, včetně 13 testů nového Python bridge. Žádná živá databáze ani rozesílání.
+`python -m unittest discover -s tests -q` — aktuálně 109 testů. Žádná živá databáze ani rozesílání.
 
-`python tests/ui_smoke.py [cesta-k-chromium]` — volitelná kontrola vykreslení přes Playwright s falešným Python bridge, testovacími kontakty v doméně `.example` a lokálním serverem. Snímky ukládá do ignorované složky `tests/artifacts/`.
+`python tests/ui_smoke.py [cesta-k-chromium]` — kontrola vykreslení přes Playwright s falešným Python bridge, testovacími kontakty v doméně `.example` a lokálním serverem. Ověřuje také živé fáze preloaderu, číselný průběh a čekání na úvodní výsledek MySQL. Snímky ukládá do ignorované složky `tests/artifacts/`.
 
 Ověřeno v headless Chromium: 1320 × 850, 1366 × 768, 1000 × 650 a 900 × 560; tabulka s 80 řádky, CAPTCHA, světlý/tmavý vzhled, hledání, detail, záložky, dynamická pole a ovládání běhu. Bez JavaScript chyb. Náhledy `tests/artifacts/light.png` a `tests/artifacts/dark.png`, které vytvoří test rozhraní, obsahují pouze testovací data.
 

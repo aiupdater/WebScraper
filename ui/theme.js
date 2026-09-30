@@ -1,5 +1,4 @@
-/* Theme behaviour adapted from FebaMont EmailApp/darkmode.js.
-   Same root classes, 240ms pulse and reveal transition; offline SVG icons. */
+/* WebScraper theme controller. Visual tokens live in app.css; icons and fonts are local. */
 (() => {
   const root = document.documentElement;
   const stored = localStorage.getItem('wlw.theme');

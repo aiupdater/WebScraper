@@ -9,12 +9,37 @@
   <meta name="description" content="Automatizovaný sběr kontaktů pro EmailApp">
   <meta property="og:title" content="WebScraper · wlw+11880">
   <meta property="og:description" content="Automatizovaný sběr kontaktů pro EmailApp">
-  <link rel="stylesheet" href="emailapp.css">
   <link rel="stylesheet" href="app.css">
   <script defer src="theme.js"></script>
   <script defer src="app.js"></script>
 </head>
-<body>
+<body class="app-loading">
+<div class="startup-loader" id="startup-loader" role="status" aria-live="polite" aria-labelledby="startup-title" aria-describedby="startup-phase">
+  <div class="startup-card">
+    <div class="startup-brand" aria-hidden="true">
+      <span class="startup-orbit orbit-indigo"></span>
+      <span class="startup-orbit orbit-cyan"></span>
+      <span class="startup-orbit orbit-green"></span>
+      <span class="startup-logo">W</span>
+    </div>
+    <p class="startup-eyebrow">WebScraper</p>
+    <h1 id="startup-title">Připravuji pracovní prostředí</h1>
+    <p class="startup-phase" id="startup-phase">Načítám uživatelské rozhraní…</p>
+    <div class="startup-progress-row">
+      <div class="startup-progress-track" role="progressbar" aria-label="Průběh spuštění aplikace" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8" id="startup-progress">
+        <span id="startup-progress-bar" style="width:8%"></span>
+      </div>
+      <output id="startup-percent" for="startup-progress">8 %</output>
+    </div>
+    <ol class="startup-stages" aria-label="Fáze spuštění">
+      <li class="active" data-startup-stage="ui"><span></span>Rozhraní</li>
+      <li data-startup-stage="python"><span></span>Python</li>
+      <li data-startup-stage="config"><span></span>Nastavení</li>
+      <li data-startup-stage="database"><span></span>MySQL</li>
+    </ol>
+    <button class="startup-continue" id="startup-continue" type="button" hidden>Pokračovat do aplikace</button>
+  </div>
+</div>
 <svg class="icon-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></symbol>
   <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
@@ -41,19 +66,12 @@
 <nav class="main-rail" aria-label="Hlavní navigace">
   <div class="rail-brand" aria-label="WebScraper"><svg class="icon"><use href="#i-search"/></svg></div>
   <div class="rail-nav">
-    <a class="rail-button active" href="#email-stats" aria-label="Přehled" title="Přehled"><svg class="icon"><use href="#i-grid"/></svg></a>
-    <a class="rail-button rail-cyan" href="#run-progress" aria-label="Průběh sběru" title="Průběh sběru"><svg class="icon"><use href="#i-chart"/></svg></a>
-    <a class="rail-button rail-green" href="#email-list" aria-label="Výsledky" title="Výsledky"><svg class="icon"><use href="#i-mail"/></svg></a>
-    <a class="rail-button rail-orange" href="#source-fields" aria-label="Datové zdroje" title="Datové zdroje"><svg class="icon"><use href="#i-layers"/></svg></a>
-  </div>
-  <div class="rail-bottom">
-    <a class="rail-button rail-violet" href="#footer-message" aria-label="Stav aplikace" title="Stav aplikace"><svg class="icon"><use href="#i-help"/></svg></a>
+    <button class="rail-button active" id="sidebar-toggle" type="button" aria-label="Skrýt nastavení sběru" title="Skrýt nastavení sběru" aria-controls="sidebar-panel" aria-expanded="true"><svg class="icon"><use href="#i-settings"/></svg></button>
   </div>
 </nav>
-<div class="desktop-shell">
+<div class="desktop-shell" id="application-shell" aria-hidden="true">
   <header class="workspace-header">
-    <div class="product-heading"><span class="product-mark"><svg class="icon"><use href="#i-search"/></svg></span><div><h1>WebScraper</h1><p>Automatizovaný sběr kontaktů, verze WLW+11880</p></div></div>
-    <img class="brand-logo" src="assets/febamont-logo.png" alt="FEBA-MONT">
+    <div class="product-heading"><img class="brand-logo" src="assets/febamont-logo.png" alt="FEBA-MONT"><div><h1>WebScraper</h1><p>Automatizovaný sběr kontaktů, verze WLW+11880</p></div></div>
     <div class="header-actions">
       <button class="btn icon-button shadown" id="theme-toggle" title="Přepnout tmavý režim" aria-label="Přepnout tmavý režim"><svg class="icon"><use href="#i-moon"/></svg></button>
       <button class="btn icon-button shadown" id="preferences-toggle" title="Nastavení zobrazení" aria-label="Nastavení zobrazení"><svg class="icon"><use href="#i-settings"/></svg></button>
@@ -68,7 +86,7 @@
     </div>
   </header>
   <div class="workspace">
-    <aside class="sidebar" aria-label="Nastavení sběru">
+    <aside class="sidebar" id="sidebar-panel" aria-label="Nastavení sběru">
       <section class="card setup-card">
         <h2>Nastavení sběru</h2><p class="section-help">Seznam kategorií pro sběr</p>
         <fieldset id="source-fields">
@@ -133,7 +151,7 @@
       <section id="verification" class="verification detail-panel-enter" hidden role="status"><svg class="icon"><use href="#i-alert"/></svg><div><strong>Ověřte se v otevřeném prohlížeči</strong><p id="verify-message">Dokončete CAPTCHA a potom pokračujte ve sběru.</p></div><button class="btn btn-outline" id="verify">Ověřeno, pokračovat</button></section>
       <section class="card results-card" id="email-list" aria-label="Výsledky sběru">
         <div class="results-toolbar"><div class="tabs" role="tablist" aria-label="Zobrazení výsledků"><button class="tab active" id="results-tab" role="tab" aria-selected="true" aria-controls="results-panel">Výsledky <span id="tab-count">0</span></button><button class="tab" id="log-tab" role="tab" aria-selected="false" aria-controls="log-panel" tabindex="-1">Protokol</button></div><button class="btn btn-quiet" id="open-folder"><svg class="icon"><use href="#i-folder"/></svg><span>Otevřít složku</span></button></div>
-        <div class="results-filters" id="filters"><div class="search-control"><svg class="icon"><use href="#i-search"/></svg><label for="search" class="sr-only">Hledat web, e-mail nebo kategorii</label><input class="form-control" id="search" placeholder="Hledat web, e-mail nebo kategorii…" autocomplete="off"><kbd>Ctrl F</kbd></div><label class="sr-only" for="result-filter">Filtrovat výsledky</label><select class="form-select" id="result-filter"><option value="all">Všechny výsledky</option><option value="emails">E-mailové kontakty</option><option value="skipped">Přeskočené</option><option value="review">K ověření</option><option value="errors">Varování</option></select></div>
+        <div class="results-filters" id="filters"><div class="search-control"><svg class="icon"><use href="#i-search"/></svg><label for="search" class="sr-only">Hledat web, e-mail nebo kategorii</label><input class="form-control" id="search" placeholder="Hledat web, e-mail nebo kategorii…" autocomplete="off"><button class="search-clear" id="search-clear" type="button" aria-label="Vymazat hledání" title="Vymazat hledání" hidden><svg class="icon"><use href="#i-close"/></svg></button><kbd>Ctrl F</kbd></div><label class="sr-only" for="result-filter">Filtrovat výsledky</label><select class="form-select" id="result-filter"><option value="all">Všechny výsledky</option><option value="emails">E-mailové kontakty</option><option value="skipped">Přeskočené</option><option value="review">K ověření</option><option value="errors">Varování</option></select></div>
         <div class="results-panel" id="results-panel" role="tabpanel" aria-labelledby="results-tab"><div class="table-scroll" id="table-scroll" tabindex="0" aria-label="Tabulka výsledků, posouvatelná"><table class="email-main-table"><colgroup><col class="col-site"><col class="col-contact"><col class="col-category"><col class="col-status"><col class="col-action"></colgroup><thead><tr><th scope="col">Firma / web</th><th scope="col">Nalezený kontakt / web</th><th scope="col">Kategorie</th><th scope="col">Stav</th><th scope="col"><span class="sr-only">Detail</span></th></tr></thead><tbody id="results-body"></tbody></table></div><div class="empty-state" id="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-mail"/></svg><span>+</span></div><h3 id="empty-title">Vaše další kontakty začínají zde</h3><p id="empty-text">Vyberte kategorie a spusťte sběr.<br>Nalezené e-maily uvidíte průběžně v tomto přehledu.</p></div></div>
         <pre id="log-panel" class="log-panel" role="tabpanel" aria-labelledby="log-tab" tabindex="0" hidden></pre>
         <div class="results-footer"><span id="result-count">Zatím žádné výsledky</span><span class="footer-note" id="table-hint">Kliknutím na řádek zobrazíte detail</span></div>
@@ -142,9 +160,10 @@
   </div>
   <footer class="app-footer"><span id="footer-message" role="status">Připojuji rozhraní…</span><span class="elapsed"><svg class="icon"><use href="#i-clock"/></svg><span id="elapsed">00:00</span></span></footer>
 </div>
-<dialog id="settings-dialog" class="app-dialog"><form id="settings-form" novalidate><div class="dialog-heading"><div><h2>Nastavení MySQL</h2><p>Připojení k EmailApp a způsob ukládání kontaktů</p></div><button class="btn icon-button btn-quiet" type="button" data-close="settings-dialog" aria-label="Zavřít"><svg class="icon"><use href="#i-close"/></svg></button></div><div class="dialog-body"><div class="field-grid server-fields"><div><label for="db-host">Server</label><input class="form-control" id="db-host" required></div><div><label for="db-port">Port</label><input class="form-control" id="db-port" type="number" min="1" max="65535" required></div></div><div class="field-grid"><div><label for="db-database">Databáze</label><input class="form-control" id="db-database" required></div><div><label for="db-user">Uživatel</label><input class="form-control" id="db-user" required autocomplete="off"></div></div><label for="db-password">Heslo</label><input class="form-control" id="db-password" type="password" autocomplete="new-password"><p class="field-help" id="password-hint">Heslo se ukládá do místního nastavení připojení.</p><label class="switch-row" for="db-tls"><input id="db-tls" type="checkbox" role="switch" checked><span class="switch-track"></span><span>Šifrované spojení (TLS)</span></label><div id="ca-field"><label for="db-ca">CA certifikát <span class="optional">(volitelné)</span></label><input class="form-control" id="db-ca" placeholder="Cesta k souboru .pem"></div><p class="form-error" id="settings-error" role="alert" hidden></p></div><div class="dialog-actions"><button class="btn btn-quiet" type="button" data-close="settings-dialog">Zrušit</button><button class="btn btn-success" id="save-settings" type="submit">Uložit a připojit</button></div></form></dialog>
+<dialog id="settings-dialog" class="app-dialog"><form id="settings-form" novalidate><div class="dialog-heading"><div><h2>Nastavení MySQL</h2><p>Připojení k EmailApp a způsob ukládání kontaktů</p></div><button class="btn icon-button btn-quiet" type="button" data-close="settings-dialog" aria-label="Zavřít"><svg class="icon"><use href="#i-close"/></svg></button></div><div class="dialog-body"><div class="field-grid server-fields"><div><label for="db-host">Server</label><input class="form-control" id="db-host" required></div><div><label for="db-port">Port</label><input class="form-control" id="db-port" type="number" min="1" max="65535" required></div></div><div class="field-grid"><div><label for="db-database">Databáze</label><input class="form-control" id="db-database" required></div><div><label for="db-user">Uživatel</label><input class="form-control" id="db-user" required autocomplete="off"></div></div><label for="db-password">Heslo</label><div class="password-control"><input class="form-control" id="db-password" type="password" autocomplete="new-password"><button class="password-toggle" id="password-toggle" type="button" aria-label="Zobrazit heslo" aria-pressed="false">Zobrazit</button></div><p class="field-help" id="password-hint">Heslo se ukládá do místního nastavení připojení.</p><label class="switch-row" for="db-tls"><input id="db-tls" type="checkbox" role="switch" checked><span class="switch-track"></span><span>Šifrované spojení (TLS)</span></label><div id="ca-field"><label for="db-ca">CA certifikát <span class="optional">(volitelné)</span></label><input class="form-control" id="db-ca" placeholder="Cesta k souboru .pem"></div><p class="form-error" id="settings-error" role="alert" hidden></p></div><div class="dialog-actions"><button class="btn btn-quiet" type="button" data-close="settings-dialog">Zrušit</button><button class="btn btn-success" id="save-settings" type="submit">Uložit a připojit</button></div></form></dialog>
 <dialog id="detail-dialog" class="app-dialog"><div class="dialog-heading"><h2 id="detail-title">Detail výsledku</h2><button class="btn icon-button btn-quiet" data-close="detail-dialog" aria-label="Zavřít"><svg class="icon"><use href="#i-close"/></svg></button></div><dl id="detail-content" class="dialog-body"></dl><div class="dialog-actions"><button class="btn btn-outline" id="copy-detail"><svg class="icon"><use href="#i-copy"/></svg>Kopírovat kontakt</button><button class="btn btn-primary" data-close="detail-dialog">Hotovo</button></div></dialog>
 <dialog id="notice-dialog" class="app-dialog notice-dialog"><div class="dialog-heading"><h2 id="notice-title">Informace</h2></div><p id="notice-text" class="dialog-body"></p><div class="dialog-actions"><button class="btn btn-primary" data-close="notice-dialog">Rozumím</button></div></dialog>
-<dialog id="preferences-dialog" class="app-dialog notice-dialog"><div class="dialog-heading"><h2>Nastavení zobrazení</h2><button class="btn icon-button btn-quiet" data-close="preferences-dialog" aria-label="Zavřít"><svg class="icon"><use href="#i-close"/></svg></button></div><div class="dialog-body"><label class="switch-row" for="reduce-motion"><input type="checkbox" id="reduce-motion" role="switch"><span class="switch-track"></span><span>Omezit animace a přechody</span></label><p class="field-help">Vzhled a efekty vycházejí z FebaMont EmailApp.</p></div><div class="dialog-actions"><button class="btn btn-primary" data-close="preferences-dialog">Hotovo</button></div></dialog>
+<dialog id="confirm-dialog" class="app-dialog notice-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text"><div class="dialog-heading"><h2 id="confirm-title">Potvrdit akci</h2><button class="btn icon-button btn-quiet" id="confirm-close" type="button" aria-label="Zavřít"><svg class="icon"><use href="#i-close"/></svg></button></div><p id="confirm-text" class="dialog-body"></p><div class="dialog-actions"><button class="btn btn-quiet" id="confirm-cancel" type="button">Zrušit</button><button class="btn btn-danger" id="confirm-accept" type="button">Potvrdit</button></div></dialog>
+<dialog id="preferences-dialog" class="app-dialog notice-dialog"><div class="dialog-heading"><h2>Nastavení zobrazení</h2><button class="btn icon-button btn-quiet" data-close="preferences-dialog" aria-label="Zavřít"><svg class="icon"><use href="#i-close"/></svg></button></div><div class="dialog-body"><label class="switch-row" for="reduce-motion"><input type="checkbox" id="reduce-motion" role="switch"><span class="switch-track"></span><span>Omezit animace a přechody</span></label><p class="field-help">Vzhled, barevné ikony a pohyb vycházejí z designového systému Lineone. Omezení pohybu zachová všechny informace bez animací.</p></div><div class="dialog-actions"><button class="btn btn-primary" data-close="preferences-dialog">Hotovo</button></div></dialog>
 <div class="toast" id="toast" role="status" hidden></div>
 </body></html>

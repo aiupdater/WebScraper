@@ -84,6 +84,76 @@ def delayed_bridge_smoke(browser, url):
     finally:
         page.close()
 
+
+def startup_loader_smoke(browser, url):
+    """Startup reports live phases and waits for the initial MySQL result."""
+    page = browser.new_page(reduced_motion='no-preference')
+    errors = []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    page.add_init_script("""window.events=[]; window.pywebview={api:{
+bootstrap:async()=>{await new Promise(r=>setTimeout(r,350));return {ok:true,categories:['Tiefbau'],folder:'test-results',settings:{has_password:true}}},
+folder_info:async()=>({ok:true,resume:false}),
+poll_events:async()=>window.events.splice(0,50),
+connect_database:async()=>{setTimeout(()=>window.events.push({type:'groups',groups:[[1,'Tiefbau']]}),450);return {ok:true}},
+settings_password:async()=>({ok:true,password:'test-password'}),
+save_categories:async(c)=>({ok:true,categories:c})
+}};""")
+    try:
+        page.goto(url)
+        expect(page.locator('#startup-loader')).to_be_visible()
+        expect(page.locator('#startup-percent')).to_contain_text('%')
+        expect(page.locator('#startup-phase')).to_contain_text('Python')
+        expect(page.locator('#startup-phase')).to_contain_text('EmailApp', timeout=3000)
+        expect(page.locator('#startup-progress')).to_have_attribute('aria-valuenow', '78')
+        page.screenshot(path=str(ROOT/'tests'/'artifacts'/'startup.png'))
+        expect(page.locator('#startup-loader')).to_have_count(0, timeout=5000)
+        expect(page.locator('#application-shell')).not_to_have_attribute('aria-hidden', 'true')
+        assert page.locator('.workspace').evaluate("el => getComputedStyle(el).transitionDuration") != '0s'
+        page.click('#mysql-toggle')
+        expect(page.locator('#settings-dialog')).to_be_visible()
+        assert 'dialogIn' in page.locator('#settings-dialog').evaluate("el => getComputedStyle(el).animationName")
+        page.locator('#settings-dialog [data-close]').first.click()
+        expect(page.locator('#settings-dialog')).to_have_class(re.compile(r'\bis-closing\b'))
+        expect(page.locator('#settings-dialog')).to_be_hidden(timeout=1500)
+        assert not errors, errors
+    finally:
+        page.close()
+
+    # Chybějící heslo nesmí preloader zablokovat; aplikace nabídne nastavení.
+    page = browser.new_page(reduced_motion='reduce')
+    page.add_init_script("""window.events=[]; window.pywebview={api:{
+bootstrap:async()=>({ok:true,categories:['Tiefbau'],folder:'test-results',settings:{has_password:false}}),
+folder_info:async()=>({ok:true,resume:false}),
+poll_events:async()=>[], settings_password:async()=>({ok:true,password:''}),
+save_categories:async(c)=>({ok:true,categories:c})
+}};""")
+    try:
+        page.goto(url)
+        expect(page.locator('#startup-loader')).to_have_count(0, timeout=3000)
+        expect(page.locator('#settings-dialog')).to_be_visible()
+        expect(page.locator('#application-shell')).not_to_have_attribute('aria-hidden', 'true')
+    finally:
+        page.close()
+
+    # Ani chyba prvního MySQL připojení nebrání lokální práci v aplikaci.
+    page = browser.new_page(reduced_motion='reduce')
+    page.add_init_script("""window.events=[]; window.pywebview={api:{
+bootstrap:async()=>({ok:true,categories:['Tiefbau'],folder:'test-results',settings:{has_password:true}}),
+folder_info:async()=>({ok:true,resume:false}),
+poll_events:async()=>window.events.splice(0,50),
+connect_database:async()=>{window.events.push({type:'groups_error',message:'Testovací chyba MySQL'});return {ok:false}},
+settings_password:async()=>({ok:true,password:'test-password'}),
+save_categories:async(c)=>({ok:true,categories:c})
+}};""")
+    try:
+        page.goto(url)
+        expect(page.locator('#startup-loader')).to_have_count(0, timeout=3000)
+        expect(page.locator('#application-shell')).not_to_have_attribute('aria-hidden', 'true')
+        expect(page.locator('#notice-dialog')).to_be_visible()
+        expect(page.locator('#notice-text')).to_contain_text('Testovací chyba MySQL')
+    finally:
+        page.close()
+
 def main():
     server = ThreadingHTTPServer(('127.0.0.1',0),functools.partial(SimpleHTTPRequestHandler,directory=str(ROOT/'ui')))
     threading.Thread(target=server.serve_forever,daemon=True).start()
@@ -99,6 +169,16 @@ def main():
             page.add_init_script(MOCK)
             page.goto(f'http://127.0.0.1:{server.server_port}')
             expect(page.locator('#start')).to_be_enabled()
+            expect(page.locator('.main-rail .rail-button')).to_have_count(1)
+            expect(page.locator('#sidebar-toggle')).to_have_attribute('aria-expanded', 'true')
+            expect(page.locator('.product-heading .brand-logo')).to_be_visible()
+            page.click('#sidebar-toggle')
+            expect(page.locator('#application-shell')).to_have_class(re.compile(r'\bsettings-collapsed\b'))
+            expect(page.locator('#sidebar-toggle')).to_have_attribute('aria-expanded', 'false')
+            expect(page.locator('#sidebar-panel')).to_be_hidden()
+            page.click('#sidebar-toggle')
+            expect(page.locator('#sidebar-toggle')).to_have_attribute('aria-expanded', 'true')
+            expect(page.locator('#sidebar-panel')).to_be_visible()
             expect(page.locator('#portal')).to_have_value('wlw')
             page.select_option('#portal', '11880')
             expect(page.locator('#portal-help')).to_contain_text('přímo z profilů')
@@ -108,8 +188,12 @@ def main():
             expect(page.locator('#db-dot')).to_have_class('status-dot connected')
             page.click('#mysql-toggle')
             expect(page.locator('#db-password')).to_have_value('test-password')
+            page.click('#password-toggle')
+            expect(page.locator('#db-password')).to_have_attribute('type', 'text')
+            expect(page.locator('#password-toggle')).to_have_attribute('aria-pressed', 'true')
             page.click('[data-close="settings-dialog"] >> text=Zrušit')
             expect(page.locator('#db-password')).to_have_value('')
+            expect(page.locator('#db-password')).to_have_attribute('type', 'password')
             page.click('#category-summary')
             page.get_by_role('checkbox', name='Tiefbau', exact=True).uncheck()
             page.get_by_role('checkbox', name='Abbruch', exact=True).uncheck()
@@ -153,6 +237,10 @@ def main():
             page.evaluate("""()=>{for(let i=0;i<80;i++)events.push({type:'result',stage:4,url:'https://firma-'+i+'.example',data:{email:'info@firma-'+i+'.example',status:'OK',origins:[{category:'Tiefbau',page:3},{category:'Abbruch',page:7}]}})}""")
             expect(page.locator('#results-body tr')).to_have_count(80)
             page.fill('#search', 'Abbruch')
+            expect(page.locator('#results-body tr')).to_have_count(80)
+            expect(page.locator('#search-clear')).to_be_visible()
+            page.click('#search-clear')
+            expect(page.locator('#search')).to_be_focused()
             expect(page.locator('#results-body tr')).to_have_count(80)
             page.fill('#search', 'Neexistující kategorie')
             expect(page.locator('#results-body tr')).to_have_count(0)
@@ -210,11 +298,14 @@ def main():
             page.click('#start')
             page.click('#stop')
             expect(page.locator('#discard-run')).to_be_visible()
-            page.on('dialog', lambda dialog: dialog.accept())
             page.click('#discard-run')
+            expect(page.locator('#confirm-dialog')).to_be_visible()
+            expect(page.locator('#confirm-cancel')).to_be_focused()
+            page.click('#confirm-accept')
             expect(page.locator('#prepare-new')).to_be_visible()
             assert not errors,errors
             print('PASS: category column, category search, detail page numbers and responsive layouts', flush=True)
+            startup_loader_smoke(browser, f'http://127.0.0.1:{server.server_port}/')
             portal_navigation_smoke(browser)
             delayed_bridge_smoke(browser, f'http://127.0.0.1:{server.server_port}/')
             browser.close()

@@ -41,3 +41,11 @@ Tento soubor zachycuje rozhodnutí, která mají ovlivnit více budoucích úkol
 - Rozhodnutí: Společný kontext a dlouhodobá rozhodnutí jsou uložené v `docs/project/`. V kořeni zůstává pouze stručný `AGENTS.md`, protože Codex jej odtud automaticky načítá pro celý repozitář.
 - Důvod: Kořen aplikace má zůstat čistý a přehledný, aniž by se zrušilo automatické předávání pravidel budoucím chatům.
 - Důsledek: Další projektové dokumenty tohoto typu se ukládají do `docs/project/`; odkazy v `AGENTS.md`, `README.md` a dokumentačním přehledu musí zůstat aktuální.
+
+## D-006: Lineone je jediný designový systém desktopového UI
+
+- Datum: 30. 9. 2026
+- Stav: platí
+- Rozhodnutí: Produkční rozhraní používá jedinou komponentovou a tokenovou vrstvu v `ui/app.css`, popsanou v kořenovém `DESIGN.md` a `docs/project/UX-CONTRACT.md`. Starý `ui/emailapp.css` ani další dodatečný skin se nevrací. Lineone referenční zdroje zůstávají pouze lokálním pracovním podkladem v ignorovaném `work/`.
+- Důvod: Předchozí vrstvení dvou stylů vytvářelo konfliktní pravidla, nekonzistentní stavy a obtížně ověřitelné opravy.
+- Důsledek: Budoucí vizuální změny upravují přímo kanonické tokeny a komponenty. Start aplikace zakrývá preloader s procenty a živými fázemi až do výsledku bootstrapu a úvodní připravenosti MySQL; chyba databáze nesmí blokovat lokální práci.

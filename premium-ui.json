@@ -1,0 +1,21 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["ui"],
+  "locale": "cs-CZ",
+  "canonicalMap": "docs/project/UX-CONTRACT.md",
+  "requiredCapabilities": ["Select/Listbox", "Form", "Scrollbar", "Toast"],
+  "ownership": {
+    "Select/Listbox": "native"
+  },
+  "requiredCommands": ["unit", "ui", "desktop", "premium"],
+  "commands": {
+    "unit": ".venv/Scripts/python.exe -m unittest discover -s tests -q",
+    "ui": ".venv/Scripts/python.exe tests/ui_smoke.py",
+    "desktop": ".venv/Scripts/python.exe tests/desktop_smoke.py",
+    "premium": ".venv/Scripts/python.exe <skill>/scripts/audit_project.py . --mode strict --no-write"
+  },
+  "evidence": {
+    "failurePaths": "tests/ui_smoke.py",
+    "desktopRuntime": "tests/desktop_smoke.py"
+  }
+}
