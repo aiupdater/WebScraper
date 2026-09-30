@@ -1,0 +1,16 @@
+__pycache__
+.venv
+vysledky
+.ui-state/
+ui-previews/
+tests/artifacts/
+config/.env
+.env
+mysql.local.json
+mysql.local.json.tmp
+config/mysql.local.json
+config/mysql.local.json.tmp
+categories.local.json
+categories.local.json.tmp
+config/categories.local.json
+config/categories.local.json.tmp

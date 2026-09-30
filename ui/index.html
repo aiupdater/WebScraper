@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="cs" class="theme-light motion-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#eef2f8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>WebScraper · wlw+11880</title>
+  <meta name="description" content="Automatizovaný sběr kontaktů pro EmailApp">
+  <meta property="og:title" content="WebScraper · wlw+11880">
+  <meta property="og:description" content="Automatizovaný sběr kontaktů pro EmailApp">
+  <link rel="stylesheet" href="emailapp.css">
+  <link rel="stylesheet" href="app.css">
+  <script defer src="theme.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+<svg class="icon-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 20v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 5v1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 4 16 4 16 0V5M4 12v7c0 4 16 4 16 0v-7"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m12 3 10 18H2zM12 9v5m0 3v1"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="16" cy="17" r="3"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7V5h7l2 3h9v12H3zM3 12h18"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 14A9 9 0 0 1 10 3a9 9 0 1 0 11 11z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M5 7a8 8 0 0 1 14-2l1 7M4 12l1 7a8 8 0 0 0 14-2"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m8 5 7 7-7 7"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.4 2.4 0 1 1 3.2 2.3c-.7.3-1 1-1 1.7v.2M12 17h.01"/></symbol>
+</defs></svg>
+<nav class="main-rail" aria-label="Hlavní navigace">
+  <div class="rail-brand" aria-label="WebScraper"><svg class="icon"><use href="#i-search"/></svg></div>
+  <div class="rail-nav">
+    <a class="rail-button active" href="#email-stats" aria-label="Přehled" title="Přehled"><svg class="icon"><use href="#i-grid"/></svg></a>
+    <a class="rail-button rail-cyan" href="#run-progress" aria-label="Průběh sběru" title="Průběh sběru"><svg class="icon"><use href="#i-chart"/></svg></a>
+    <a class="rail-button rail-green" href="#email-list" aria-label="Výsledky" title="Výsledky"><svg class="icon"><use href="#i-mail"/></svg></a>
+    <a class="rail-button rail-orange" href="#source-fields" aria-label="Datové zdroje" title="Datové zdroje"><svg class="icon"><use href="#i-layers"/></svg></a>
+  </div>
+  <div class="rail-bottom">
+    <a class="rail-button rail-violet" href="#footer-message" aria-label="Stav aplikace" title="Stav aplikace"><svg class="icon"><use href="#i-help"/></svg></a>
+  </div>
+</nav>
+<div class="desktop-shell">
+  <header class="workspace-header">
+    <div class="product-heading"><span class="product-mark"><svg class="icon"><use href="#i-search"/></svg></span><div><h1>WebScraper</h1><p>Automatizovaný sběr kontaktů, verze WLW+11880</p></div></div>
+    <img class="brand-logo" src="assets/febamont-logo.png" alt="FEBA-MONT">
+    <div class="header-actions">
+      <button class="btn icon-button shadown" id="theme-toggle" title="Přepnout tmavý režim" aria-label="Přepnout tmavý režim"><svg class="icon"><use href="#i-moon"/></svg></button>
+      <button class="btn icon-button shadown" id="preferences-toggle" title="Nastavení zobrazení" aria-label="Nastavení zobrazení"><svg class="icon"><use href="#i-settings"/></svg></button>
+      <button class="btn icon-button shadown" id="mysql-toggle" title="Nastavení MySQL" aria-label="Nastavení MySQL"><svg class="icon"><use href="#i-database"/></svg><span class="status-dot failed" id="db-dot"></span></button>
+      <button class="btn btn-success shadown" id="start" disabled><svg class="icon"><use href="#i-play"/></svg><span>Spustit sběr</span></button>
+      <button class="btn btn-danger shadown" id="stop" hidden title="Zastavit sběr"><svg class="icon"><use href="#i-stop"/></svg><span>Zastavit sběr</span></button>
+      <button class="btn btn-primary shadown" id="prepare-new" hidden title="Vynulovat a připravit nový sběr"><svg class="icon"><use href="#i-refresh"/></svg><span>Připravit nový sběr</span></button>
+      <button class="btn btn-primary shadown" id="resume-run" hidden title="Pokračovat ve sběru"><svg class="icon"><use href="#i-play"/></svg><span>Pokračovat ve sběru</span></button>
+      <button class="btn btn-success shadown" id="finish-run" hidden title="Použít aktuální data"><svg class="icon"><use href="#i-check"/></svg><span>Použít aktuální data</span></button>
+      <button class="btn btn-danger shadown" id="discard-run" hidden title="Ukončit"><svg class="icon"><use href="#i-close"/></svg><span>Ukončit</span></button>
+      <button id="discard-saved" hidden style="display:none"></button>
+    </div>
+  </header>
+  <div class="workspace">
+    <aside class="sidebar" aria-label="Nastavení sběru">
+      <section class="card setup-card">
+        <h2>Nastavení sběru</h2><p class="section-help">Seznam kategorií pro sběr</p>
+        <fieldset id="source-fields">
+          <label for="portal">Databáze firem</label>
+          <select class="form-select" id="portal"><option value="wlw">WLW.de</option><option value="11880">11880.com</option></select>
+          <p class="field-help" id="portal-help">E-maily se hledají na firemních webech.</p>
+          <label id="category-label">Kategorie</label>
+          <details class="category-picker" id="category-picker"><summary id="category-summary">Vyberte kategorie</summary>
+            <div id="category" role="group" aria-labelledby="category-label"></div>
+            <button type="button" class="btn btn-quiet full" id="select-all-categories">Vybrat všechny</button>
+          </details>
+          <p class="field-help" id="category-help" role="status">Vyberte alespoň jednu kategorii.</p>
+          <label class="sr-only" for="new-category">Nová kategorie</label>
+          <div class="category-add"><input class="form-control" id="new-category" maxlength="150" placeholder="Nová kategorie…"><button class="btn btn-outline" id="add-category" type="button">Přidat</button></div>
+          <label for="pages">Počet stránek k prohledání </label><input class="form-control" id="pages" type="number" min="1" max="10000" value="20">
+          <details id="advanced"><summary>Další nastavení<svg class="icon"><use href="#i-chevron"/></svg></summary>
+            <div class="advanced-content detail-panel-enter">
+              <div class="field-grid"><div><label for="start-page">Od stránky</label><input class="form-control" id="start-page" type="number" min="1" value="1"></div><div><label for="workers">Souběžné weby</label><input class="form-control" id="workers" type="number" min="1" max="16" value="3"></div></div>
+              <label for="delay">Pauza mezi kroky(s)</label><input class="form-control" id="delay" inputmode="decimal" value="3.0">
+              <label for="wlw-mode">Metoda zobrazení</label><select class="form-select" id="wlw-mode"><option value="browser">Prohlížeč s ručním ověřením</option><option value="http">Přímé HTTP</option></select>
+              <div id="browser-field"><label for="browser">Prohlížeč</label><select class="form-select" id="browser"><option value="chromium">Chromium</option><option value="msedge">Microsoft Edge</option><option value="chrome">Google Chrome</option></select></div>
+            </div>
+          </details>
+        </fieldset>
+      </section>
+      <section class="card setup-card">
+        <h2>Ukládání kontaktů</h2>
+        <fieldset id="destination-fields">
+          <label for="destination">Cílové uložiště</label><select class="form-select" id="destination"><option value="files">Lokálně v souboru</option><option value="mysql" selected>EmailApp (MySQL)</option></select>
+          <div id="group-field" class="detail-panel-enter" hidden><label for="group" style="display:flex;align-items:center;justify-content:space-between"><span>Skupina pro nové kontakty</span><span id="group-badge" class="status-dot" style="display:none;width:8px;height:8px;" title="Barva vybrané skupiny"></span></label><select class="form-select" id="group" disabled><option value="">⚪ Bez skupiny (výchozí)</option></select></div>
+          <label class="switch-row" for="skip-existing"><input type="checkbox" id="skip-existing" role="switch" checked><span class="switch-track"></span><span>Přeskočit známé e-maily</span></label>
+          <p class="field-help">Kontrola ve všech skupinách EmailApp.</p>
+          <label class="switch-row" for="save-best-email"><input type="checkbox" id="save-best-email" role="switch" checked><span class="switch-track"></span><span id="save-best-email-label">Vybrat nejlepší e-mail</span></label>
+          <p class="field-help" id="save-best-email-help">Firmy co mají více kontaktů</p>
+          <button class="btn btn-outline full" id="connect" type="button" style="margin-top:16px;"><svg class="icon"><use href="#i-database"/></svg><span>Obnovit skupiny</span></button>
+        </fieldset>
+      </section>
+      <section class="card setup-card folder-card">
+        <h2><svg class="icon"><use href="#i-folder"/></svg>Složka běhu</h2>
+        <p class="section-help">Výsledky a průběh pro pokračování.</p>
+        <fieldset id="folder-fields"><label class="sr-only" for="folder">Cesta ke složce výsledků</label><input class="form-control" id="folder" spellcheck="false">
+        <div class="folder-actions"><button class="btn btn-quiet" id="choose-folder">Změnit…</button><button class="btn btn-quiet" id="new-folder">Nová složka</button></div></fieldset>
+      </section>
+    </aside>
+    <main class="main-content">
+      <div class="stats-grid" id="email-stats" aria-label="Statistika běhu">
+        <article class="card stat-card"><span class="stat-icon blue"><svg class="icon"><use href="#i-users"/></svg></span><div><h2>Nalezeno profilů</h2><strong id="stat-profiles">0</strong></div></article>
+        <article class="card stat-card"><span class="stat-icon green"><svg class="icon"><use href="#i-mail"/></svg></span><div><h2>Přidáno e-mailů</h2><strong id="stat-emails">0</strong></div></article>
+        <article class="card stat-card"><span class="stat-icon gray"><svg class="icon"><use href="#i-database"/></svg></span><div><h2>Přeskočeno duplicit</h2><strong id="stat-skipped">0</strong></div></article>
+        <article class="card stat-card"><span class="stat-icon red"><svg class="icon"><use href="#i-alert"/></svg></span><div><h2>Upozornění</h2><strong id="stat-errors">0</strong></div></article>
+      </div>
+      <section class="card progress-card" id="run-progress" aria-label="Průběh sběru">
+        <div class="section-heading"><h2>Průběh sběru</h2><span class="badge badge-green" id="run-status">Připraveno</span></div>
+        <div class="steps">
+          <div class="step" data-stage="1"><div class="step-heading"><span class="step-number">01</span><h3>Stránek v katalogu</h3></div><progress max="1" value="0" aria-label="Stránek v katalogu"></progress><p>Čeká na spuštění</p></div>
+          <div class="step" data-stage="2"><div class="step-heading"><span class="step-number">02</span><h3>Odkazů na firemní web</h3></div><progress max="1" value="0" aria-label="Odkazů na firemní web"></progress><p>Čeká</p></div>
+          <div class="step" data-stage="3"><div class="step-heading"><span class="step-number">03</span><h3>Kontrola odkazů</h3></div><progress max="1" value="0" aria-label="Kontrola odkazů"></progress><p>Čeká</p></div>
+          <div class="step" data-stage="4"><div class="step-heading"><span class="step-number">04</span><h3>Prohledáno stránek</h3></div><progress max="1" value="0" aria-label="Prohledáno stránek"></progress><p>Čeká</p></div>
+        </div>
+        <div class="current-line"><span class="status-dot" id="activity-dot"></span><span id="current-request">Hotové výsledky se ukládají průběžně.</span></div>
+      </section>
+      <section id="verification" class="verification detail-panel-enter" hidden role="status"><svg class="icon"><use href="#i-alert"/></svg><div><strong>Ověřte se v otevřeném prohlížeči</strong><p id="verify-message">Dokončete CAPTCHA a potom pokračujte ve sběru.</p></div><button class="btn btn-outline" id="verify">Ověřeno, pokračovat</button></section>
+      <section class="card results-card" id="email-list" aria-label="Výsledky sběru">
+        <div class="results-toolbar"><div class="tabs" role="tablist" aria-label="Zobrazení výsledků"><button class="tab active" id="results-tab" role="tab" aria-selected="true" aria-controls="results-panel">Výsledky <span id="tab-count">0</span></button><button class="tab" id="log-tab" role="tab" aria-selected="false" aria-controls="log-panel" tabindex="-1">Protokol</button></div><button class="btn btn-quiet" id="open-folder"><svg class="icon"><use href="#i-folder"/></svg><span>Otevřít složku</span></button></div>
+        <div class="results-filters" id="filters"><div class="search-control"><svg class="icon"><use href="#i-search"/></svg><label for="search" class="sr-only">Hledat web, e-mail nebo kategorii</label><input class="form-control" id="search" placeholder="Hledat web, e-mail nebo kategorii…" autocomplete="off"><kbd>Ctrl F</kbd></div><label class="sr-only" for="result-filter">Filtrovat výsledky</label><select class="form-select" id="result-filter"><option value="all">Všechny výsledky</option><option value="emails">E-mailové kontakty</option><option value="skipped">Přeskočené</option><option value="review">K ověření</option><option value="errors">Varování</option></select></div>
+        <div class="results-panel" id="results-panel" role="tabpanel" aria-labelledby="results-tab"><div class="table-scroll" id="table-scroll" tabindex="0" aria-label="Tabulka výsledků, posouvatelná"><table class="email-main-table"><colgroup><col class="col-site"><col class="col-contact"><col class="col-category"><col class="col-status"><col class="col-action"></colgroup><thead><tr><th scope="col">Firma / web</th><th scope="col">Nalezený kontakt / web</th><th scope="col">Kategorie</th><th scope="col">Stav</th><th scope="col"><span class="sr-only">Detail</span></th></tr></thead><tbody id="results-body"></tbody></table></div><div class="empty-state" id="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-mail"/></svg><span>+</span></div><h3 id="empty-title">Vaše další kontakty začínají zde</h3><p id="empty-text">Vyberte kategorie a spusťte sběr.<br>Nalezené e-maily uvidíte průběžně v tomto přehledu.</p></div></div>
+        <pre id="log-panel" class="log-panel" role="tabpanel" aria-labelledby="log-tab" tabindex="0" hidden></pre>
+        <div class="results-footer"><span id="result-count">Zatím žádné výsledky</span><span class="footer-note" id="table-hint">Kliknutím na řádek zobrazíte detail</span></div>
+      </section>
+    </main>
+  </div>
+  <footer class="app-footer"><span id="footer-message" role="status">Připojuji rozhraní…</span><span class="elapsed"><svg class="icon"><use href="#i-clock"/></svg><span id="elapsed">00:00</span></span></footer>
+</div>
+<dialog id="settings-dialog" class="app-dialog"><form id="settings-form" novalidate><div class="dialog-heading"><div><h2>Nastavení MySQL</h2><p>Připojení k EmailApp a způsob ukládání kontaktů</p></div><button class="btn icon-button btn-quiet" type="button" data-close="settings-dialog" aria-label="Zavřít"><svg class="icon"><use href="#i-close"/></svg></button></div><div class="dialog-body"><div class="field-grid server-fields"><div><label for="db-host">Server</label><input class="form-control" id="db-host" required></div><div><label for="db-port">Port</label><input class="form-control" id="db-port" type="number" min="1" max="65535" required></div></div><div class="field-grid"><div><label for="db-database">Databáze</label><input class="form-control" id="db-database" required></div><div><label for="db-user">Uživatel</label><input class="form-control" id="db-user" required autocomplete="off"></div></div><label for="db-password">Heslo</label><input class="form-control" id="db-password" type="password" autocomplete="new-password"><p class="field-help" id="password-hint">Heslo se ukládá do místního nastavení připojení.</p><label class="switch-row" for="db-tls"><input id="db-tls" type="checkbox" role="switch" checked><span class="switch-track"></span><span>Šifrované spojení (TLS)</span></label><div id="ca-field"><label for="db-ca">CA certifikát <span class="optional">(volitelné)</span></label><input class="form-control" id="db-ca" placeholder="Cesta k souboru .pem"></div><p class="form-error" id="settings-error" role="alert" hidden></p></div><div class="dialog-actions"><button class="btn btn-quiet" type="button" data-close="settings-dialog">Zrušit</button><button class="btn btn-success" id="save-settings" type="submit">Uložit a připojit</button></div></form></dialog>
+<dialog id="detail-dialog" class="app-dialog"><div class="dialog-heading"><h2 id="detail-title">Detail výsledku</h2><button class="btn icon-button btn-quiet" data-close="detail-dialog" aria-label="Zavřít"><svg class="icon"><use href="#i-close"/></svg></button></div><dl id="detail-content" class="dialog-body"></dl><div class="dialog-actions"><button class="btn btn-outline" id="copy-detail"><svg class="icon"><use href="#i-copy"/></svg>Kopírovat kontakt</button><button class="btn btn-primary" data-close="detail-dialog">Hotovo</button></div></dialog>
+<dialog id="notice-dialog" class="app-dialog notice-dialog"><div class="dialog-heading"><h2 id="notice-title">Informace</h2></div><p id="notice-text" class="dialog-body"></p><div class="dialog-actions"><button class="btn btn-primary" data-close="notice-dialog">Rozumím</button></div></dialog>
+<dialog id="preferences-dialog" class="app-dialog notice-dialog"><div class="dialog-heading"><h2>Nastavení zobrazení</h2><button class="btn icon-button btn-quiet" data-close="preferences-dialog" aria-label="Zavřít"><svg class="icon"><use href="#i-close"/></svg></button></div><div class="dialog-body"><label class="switch-row" for="reduce-motion"><input type="checkbox" id="reduce-motion" role="switch"><span class="switch-track"></span><span>Omezit animace a přechody</span></label><p class="field-help">Vzhled a efekty vycházejí z FebaMont EmailApp.</p></div><div class="dialog-actions"><button class="btn btn-primary" data-close="preferences-dialog">Hotovo</button></div></dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+</body></html>

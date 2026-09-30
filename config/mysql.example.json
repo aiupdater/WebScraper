@@ -1,0 +1,9 @@
+{
+  "host": "nch06.vas-server.cz",
+  "port": 3306,
+  "database": "dbemailapp_1",
+  "user": "dbemailapp.1",
+  "password": "Dbemailapp.1",
+  "tls": false,
+  "ca_file": ""
+}

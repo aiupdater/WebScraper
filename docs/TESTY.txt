@@ -1,0 +1,49 @@
+test_403_is_not_manual_challenge (test_browser.AccessTests.test_403_is_not_manual_challenge) ... ok
+test_aws_captcha_405 (test_browser.AccessTests.test_aws_captcha_405) ... ok
+test_aws_challenge_202 (test_browser.AccessTests.test_aws_challenge_202) ... ok
+test_captcha_in_200_response (test_browser.AccessTests.test_captcha_in_200_response) ... ok
+test_httpx_classifies_response_before_discarding_body (test_browser.AccessTests.test_httpx_classifies_response_before_discarding_body) ... ok
+test_normal_contact_form_is_not_challenge (test_browser.AccessTests.test_normal_contact_form_is_not_challenge) ... ok
+test_plain_405_is_not_captcha (test_browser.AccessTests.test_plain_405_is_not_captcha) ... ok
+test_cancel_waiting (test_browser.BrowserTests.test_cancel_waiting) ... ok
+test_closed_window_reports_actionable_error (test_browser.BrowserTests.test_closed_window_reports_actionable_error) ... ok
+test_http403_stops_without_waiting (test_browser.BrowserTests.test_http403_stops_without_waiting) ... ok
+test_iframe_response_does_not_replace_main_status (test_browser.BrowserTests.test_iframe_response_does_not_replace_main_status) ... ok
+test_legacy_robots_setting_does_not_check_rules (test_browser.BrowserTests.test_legacy_robots_setting_does_not_check_rules) ... ok
+test_pause_waits_for_explicit_confirmation_and_uses_same_page (test_browser.BrowserTests.test_pause_waits_for_explicit_confirmation_and_uses_same_page) ... ok
+test_rate_limit_not_hammered (test_browser.BrowserTests.test_rate_limit_not_hammered) ... ok
+test_stale_confirmation_is_cleared (test_browser.BrowserTests.test_stale_confirmation_is_cleared) ... ok
+test_thread_ownership_is_enforced (test_browser.BrowserTests.test_thread_ownership_is_enforced) ... ok
+test_unsolved_confirmation_does_not_proceed (test_browser.BrowserTests.test_unsolved_confirmation_does_not_proceed) ... ok
+test_wrong_page_after_verification_not_accepted (test_browser.BrowserTests.test_wrong_page_after_verification_not_accepted) ... ok
+test_blocked_profile_stops_remaining_profiles_and_is_retryable (test_browser.IntegrationTests.test_blocked_profile_stops_remaining_profiles_and_is_retryable) ... ok
+test_old_task_identity_supports_browser_switch (test_browser.IntegrationTests.test_old_task_identity_supports_browser_switch) ... ok
+test_search_and_profiles_use_coordinator_thread (test_browser.IntegrationTests.test_search_and_profiles_use_coordinator_thread) ... ok
+test_websites_import_does_not_launch_browser (test_browser.IntegrationTests.test_websites_import_does_not_launch_browser) ... ok
+test_404_not_retried (test_core.FetchTests.test_404_not_retried) ... ok
+test_long_retry_after_not_shortened (test_core.FetchTests.test_long_retry_after_not_shortened) ... ok
+test_redirect_to_private_address_rejected (test_core.FetchTests.test_redirect_to_private_address_rejected) ... ok
+test_retry_429_without_robots (test_core.FetchTests.test_retry_429_without_robots) ... ok
+test_robots_never_requested_even_with_legacy_setting (test_core.FetchTests.test_robots_never_requested_even_with_legacy_setting) ... ok
+test_ambiguous_requires_review (test_core.ParserTests.test_ambiguous_requires_review) ... ok
+test_email_extraction (test_core.ParserTests.test_email_extraction) ... ok
+test_exact_registrable_domain (test_core.ParserTests.test_exact_registrable_domain) ... ok
+test_explicit_redirect (test_core.ParserTests.test_explicit_redirect) ... ok
+test_jsonld_organization (test_core.ParserTests.test_jsonld_organization) ... ok
+test_no_guess_from_technical_urls (test_core.ParserTests.test_no_guess_from_technical_urls) ... ok
+test_nuxt_homepage_matches_exact_profile (test_core.ParserTests.test_nuxt_homepage_matches_exact_profile) ... ok
+test_preserves_www_and_filters_subdomains (test_core.ParserTests.test_preserves_www_and_filters_subdomains) ... ok
+test_profiles_are_canonical_and_not_foreign (test_core.ParserTests.test_profiles_are_canonical_and_not_foreign) ... ok
+test_cancel_then_resume (test_core.PipelineTests.test_cancel_then_resume) ... ok
+test_empty_search_is_not_false_success (test_core.PipelineTests.test_empty_search_is_not_false_success) ... ok
+test_end_to_end_resume_and_provenance (test_core.PipelineTests.test_end_to_end_resume_and_provenance) ... ok
+test_exclusive_output_folder (test_core.PipelineTests.test_exclusive_output_folder) ... ok
+test_import_sites_deduplicates_www_without_changing_url (test_core.PipelineTests.test_import_sites_deduplicates_www_without_changing_url) ... ok
+test_partial_then_retry (test_core.PipelineTests.test_partial_then_retry) ... ok
+test_reject_changed_input (test_core.PipelineTests.test_reject_changed_input) ... ok
+test_search_repeated_pages_and_encoded_query (test_core.PipelineTests.test_search_repeated_pages_and_encoded_query) ... ok
+
+----------------------------------------------------------------------
+Ran 44 tests in 0.311s
+
+OK
