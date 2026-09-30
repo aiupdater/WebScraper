@@ -1,5 +1,9 @@
 # WebScraper · WLW.de / 11880.com
 
+Společný kontext pro vývojové chaty je v [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md),
+trvalá pravidla v [AGENTS.md](AGENTS.md) a dlouhodobá rozhodnutí v
+[DECISIONS.md](DECISIONS.md).
+
 ## Spuštění
 
 1. Při první instalaci spusťte **_INSTALOVAT.bat**.
