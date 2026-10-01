@@ -115,6 +115,12 @@ save_categories:async(c)=>({ok:true,categories:c})
         page.locator('#settings-dialog [data-close]').first.click()
         expect(page.locator('#settings-dialog')).to_have_class(re.compile(r'\bis-closing\b'))
         expect(page.locator('#settings-dialog')).to_be_hidden(timeout=1500)
+        page.click('#advanced > summary')
+        expect(page.locator('#advanced')).to_have_attribute('open', '')
+        assert page.locator('#advanced').evaluate("el => el.getAnimations().some(animation => animation.playState === 'running')")
+        expect(page.locator('#advanced')).not_to_have_class(re.compile(r'\bis-resizing\b'), timeout=1500)
+        page.click('#advanced > summary')
+        expect(page.locator('#advanced')).not_to_have_attribute('open', '', timeout=1500)
         assert not errors, errors
     finally:
         page.close()
@@ -180,6 +186,7 @@ def main():
             expect(page.locator('#sidebar-toggle')).to_have_attribute('aria-expanded', 'true')
             expect(page.locator('#sidebar-panel')).to_be_visible()
             expect(page.locator('#portal')).to_have_value('wlw')
+            assert page.locator('#browser-field').evaluate("el => getComputedStyle(el).transitionDuration") != '0s'
             page.select_option('#portal', '11880')
             expect(page.locator('#portal-help')).to_contain_text('přímo z profilů')
             page.screenshot(path=str(previews/'portal-11880.png'))
@@ -234,7 +241,17 @@ def main():
             assert page.evaluate('window.lastConfig.portal') == '11880'
             assert page.evaluate('window.lastConfig.output_mode') == 'mysql'
             assert page.evaluate('window.lastConfig.skip_existing') is True
-            page.evaluate("""()=>{for(let i=0;i<80;i++)events.push({type:'result',stage:4,url:'https://firma-'+i+'.example',data:{email:'info@firma-'+i+'.example',status:'OK',origins:[{category:'Tiefbau',page:3},{category:'Abbruch',page:7}]}})}""")
+            page.evaluate("""()=>{for(let i=0;i<80;i++){const status=i===0?'SKIPPED_EXISTING':i===1?'REVIEW':i===2?'ERROR':'OK';const data={status,origins:[{category:'Tiefbau',page:3},{category:'Abbruch',page:7}]};if(status==='OK')data.email='info@firma-'+i+'.example';if(status==='SKIPPED_EXISTING')data.skipped_existing=['known@firma.example'];events.push({type:'result',stage:4,url:'https://firma-'+i+'.example',data})}}""")
+            expect(page.locator('#results-body tr')).to_have_count(80)
+            page.select_option('#result-filter', 'emails')
+            expect(page.locator('#results-body tr')).to_have_count(77)
+            page.select_option('#result-filter', 'skipped')
+            expect(page.locator('#results-body tr')).to_have_count(1)
+            page.select_option('#result-filter', 'review')
+            expect(page.locator('#results-body tr')).to_have_count(1)
+            page.select_option('#result-filter', 'errors')
+            expect(page.locator('#results-body tr')).to_have_count(1)
+            page.select_option('#result-filter', 'all')
             expect(page.locator('#results-body tr')).to_have_count(80)
             page.fill('#search', 'Abbruch')
             expect(page.locator('#results-body tr')).to_have_count(80)

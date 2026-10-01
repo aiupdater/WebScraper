@@ -123,6 +123,7 @@ summary { list-style:none; cursor:pointer; display:flex; align-items:center; jus
 summary::-webkit-details-marker { display:none; }
 summary .icon { width:14px; height:14px; transition:transform .2s; }
 details[open] summary .icon { transform:rotate(90deg); }
+details.is-resizing { overflow:hidden; }
 .field-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .switch-row { display:flex; align-items:center; position:relative; gap:10px; font-size:12px; font-weight:600; margin-top:18px; cursor:pointer; }
 .switch-row input { position:absolute; opacity:0; width:32px; height:20px; }
@@ -360,8 +361,22 @@ label:not(.switch-row):not(.sr-only) { margin-top:14px; color:var(--text-strong)
 .switch-row input:checked + .switch-track::after { transform:translateX(20px); }
 @media (min-width:761px) { .sidebar .switch-row > span:last-child { white-space:nowrap; } }
 
-.header-actions > .btn:not([hidden]),.verification:not([hidden]),.detail-panel-enter:not([hidden]),.empty-state:not([hidden]) { animation:smoothReveal .3s cubic-bezier(.16,1,.3,1) both; }
-details[open] > .advanced-content { animation:smoothReveal .32s cubic-bezier(.16,1,.3,1) both; }
+details[open]:not(.is-resizing) > .advanced-content { animation:smoothReveal .32s cubic-bezier(.16,1,.3,1) both; }
+
+:where(#startup-continue,#group-field,#browser-field,#connect,#ca-field,#settings-error,#verification,#results-panel,#filters,#log-panel,#table-hint,#empty-state,#search-clear,.header-actions > .btn) {
+  transition:opacity .26s cubic-bezier(.4,0,.2,1),transform .3s cubic-bezier(.16,1,.3,1),display .3s allow-discrete;
+}
+:where(#startup-continue,#group-field,#browser-field,#connect,#ca-field,#settings-error,#verification,#results-panel,#filters,#log-panel,#table-hint,#empty-state,#search-clear,.header-actions > .btn)[hidden] {
+  display:none;
+  opacity:0;
+  transform:translateY(-6px) scale(.985);
+}
+@starting-style {
+  :where(#startup-continue,#group-field,#browser-field,#connect,#ca-field,#settings-error,#verification,#results-panel,#filters,#log-panel,#table-hint,#empty-state,#search-clear,.header-actions > .btn):not([hidden]) {
+    opacity:0;
+    transform:translateY(7px) scale(.985);
+  }
+}
 
 .main-content { gap:16px; }
 .stats-grid { gap:16px; }

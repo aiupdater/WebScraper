@@ -80,6 +80,33 @@
     dialog.addEventListener('animationend', finish, {once:true});
     setTimeout(finish, 260);
   }
+  function setupAnimatedDetails(details) {
+    const summary = details.querySelector(':scope > summary');
+    if (!summary) return;
+    summary.addEventListener('click', event => {
+      event.preventDefault();
+      if (details.classList.contains('is-resizing')) return;
+      if (reducedMotion()) { details.open = !details.open; return; }
+      const opening = !details.open;
+      const startHeight = details.getBoundingClientRect().height;
+      if (opening) details.open = true;
+      const style = getComputedStyle(details);
+      const collapsedHeight = summary.getBoundingClientRect().height + parseFloat(style.borderTopWidth || 0) + parseFloat(style.borderBottomWidth || 0);
+      const endHeight = opening ? details.scrollHeight : collapsedHeight;
+      details.classList.add('is-resizing');
+      details.style.height = `${startHeight}px`;
+      const animation = details.animate(
+        {height:[`${startHeight}px`,`${endHeight}px`]},
+        {duration:opening ? 380 : 300,easing:opening ? 'cubic-bezier(.16,1,.3,1)' : 'cubic-bezier(.4,0,.2,1)'}
+      );
+      animation.onfinish = () => {
+        if (!opening) details.open = false;
+        details.classList.remove('is-resizing');
+        details.style.height = '';
+      };
+      animation.oncancel = animation.onfinish;
+    });
+  }
 
   function notice(title, text) {
     $('notice-title').textContent = title;
@@ -439,9 +466,9 @@
     const d = record.data, filter = $('result-filter').value;
     const emails = d.emails || (d.email ? [d.email] : []);
     if (filter === 'emails' && !emails.length) return false;
-    if (filter === 'skipped' && d.status !== 'SKIPPED_EXISTING') return false;
-    if (filter === 'review' && d.status !== 'REVIEW') return false;
-    if (filter === 'errors' && !['ERROR','PARTIAL'].includes(d.status) && d.delivery !== 'PENDING') return false;
+    if (filter === 'skipped' && d.status !== 'SKIPPED_EXISTING' && !d.skipped_email && !(d.skipped_existing||[]).length) return false;
+    if (filter === 'review' && d.status !== 'REVIEW' && !d.review && !d.needs_review) return false;
+    if (filter === 'errors' && !['ERROR','PARTIAL'].includes(d.status) && !d.error && d.delivery !== 'PENDING') return false;
     return [record.url, ...emails, d.website, d.skipped_email, ...(d.skipped_existing||[]), ...(d.origins||[]).map(o=>o.category), statusOf(record)[0]]
       .join(' ').toLocaleLowerCase('cs').includes($('search').value.trim().toLocaleLowerCase('cs'));
   }
@@ -813,6 +840,7 @@
     $('db-password').focus();
   });
   $('preferences-toggle').addEventListener('click',()=> openDialog($('preferences-dialog')));
+  document.querySelectorAll('details').forEach(setupAnimatedDetails);
   const sidebarToggle = $('sidebar-toggle');
   const applicationShell = $('application-shell');
   const setSidebarOpen = (open, persist = true) => {
