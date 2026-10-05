@@ -1,0 +1,9 @@
+{
+  "host": "db-emailapp.dbaserver.net",
+  "database": "db-emailapp",
+  "user": "db-emailapp",
+  "port": 3306,
+  "password": "Fp0ENDS6",
+  "tls": false,
+  "ca_file": ""
+}

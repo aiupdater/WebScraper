@@ -8,10 +8,6 @@ tests/artifacts/
 config/.env
 .env
 _SPUSTIT_LINEONE.bat
-mysql.local.json
-mysql.local.json.tmp
-config/mysql.local.json
-config/mysql.local.json.tmp
 categories.local.json
 categories.local.json.tmp
 config/categories.local.json
