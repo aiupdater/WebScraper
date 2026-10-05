@@ -266,13 +266,27 @@ body { margin:0; background:var(--canvas); color:var(--text); font-family:var(--
   border:0;
   border-radius:10px;
   background:transparent;
-  color:#8b5cf6;
+  color:var(--muted);
   text-decoration:none;
   transition:background-color .2s,color .2s,transform .2s;
 }
 .rail-button .icon { width:21px; height:21px; stroke-width:1.8; }
-.rail-button:hover { background:#f3f0ff; transform:translateY(-1px); }
-.rail-button.active { color:var(--blue); background:#eef2ff; }
+.rail-button:hover { background:var(--subtle); transform:translateY(-1px); }
+.rail-button.active { color:var(--muted); background:var(--subtle); }
+.browser-button { position:relative; }
+.browser-button:disabled { cursor:default; transform:none; }
+.browser-button[data-visibility="off"] { opacity:.5; }
+.browser-button[aria-busy="true"] { opacity:1; }
+.browser-indicator { position:absolute; right:7px; bottom:7px; width:6px; height:6px; border-radius:50%; background:var(--muted); }
+.browser-button[data-visibility="hidden"] .browser-indicator { background:var(--info); }
+.browser-button.active .browser-indicator { background:var(--green); }
+.browser-badge { position:absolute; top:2px; right:2px; width:17px; height:17px; border-radius:50%; background:var(--warning); color:#192132; font-size:12px; font-weight:700; line-height:17px; }
+.browser-badge[hidden] { display:none; }
+.browser-button.requires-verification { outline:2px solid var(--warning); outline-offset:2px; }
+.browser-button[aria-busy="true"] .browser-indicator { animation:browser-pulse 1s ease-in-out infinite; }
+@keyframes browser-pulse { 50% { opacity:.3; } }
+@media (prefers-reduced-motion:reduce) { .browser-button[aria-busy="true"] .browser-indicator { animation:none; } }
+html.motion-reduced .browser-button[aria-busy="true"] .browser-indicator { animation:none; }
 .rail-button.rail-cyan { color:var(--info); }
 .rail-button.rail-cyan:hover { background:#e7f7fe; }
 .rail-button.rail-green { color:var(--green); }

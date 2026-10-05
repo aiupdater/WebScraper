@@ -29,7 +29,9 @@ Ověření 26. 9. 2026: 103 automatických testů prošlo; prošel i test rozhra
 3. Spusťte `_SPUSTIT.bat`.
 4. V poli **Kategorie** zaškrtněte požadované kategorie. Při prvním spuštění je připravená **Tiefbau**, další si můžete přidat nebo smazat. Aplikace postupně získá firemní profily ze všech vybraných kategorií. Nastavte počáteční stránku a maximální počet stránek pro každou kategorii.
 5. Pro WLW zvolte **Prohlížeč + ruční ověření** a **Chromium** (instalátor jej stáhne). Microsoft Edge / Google Chrome lze vybrat, pokud je již máte nainstalované.
-6. Zvolte výstupní složku a stiskněte **Spustit / pokračovat**. Při CAPTCHA ji vyřešte přímo v otevřeném okně a potom v aplikaci stiskněte **Ověřeno — pokračovat**.
+6. Zvolte výstupní složku a stiskněte **Spustit / pokračovat**. Na Windows desktopu prohlížeč běží skrytě. Tlačítko **Prohlížeč** v levé liště přepíná zobrazení stejného okna bez zastavení sběru. Při odznaku **Vyžaduje ověření** otevřete prohlížeč, dokončete CAPTCHA a stiskněte **Ověřeno — pokračovat**. Odznak zmizí až po potvrzeném dokončení ověření nebo ukončení běhu.
+
+Při minimalizované aplikaci první výzva odešle jedno Windows upozornění; jeho zobrazení může omezit nastavení Windows. CAPTCHA sama okno neotevře. Zavření prohlížeče přeruší běh s `BROWSER_CLOSED`; použijte pokračování ve stejné složce. Pokud nelze okno bezpečně identifikovat, aplikace zpřístupní pouze svou stránku a tlačítko ji pak jen přenáší do popředí. Pokud selže i tato obnova, sběr se přeruší a nabídne pokračování ve viditelném režimu. CLI a jiné systémy zachovávají viditelný prohlížeč.
 
 **Aktualizace původní verze:** zavřete aplikaci, překopírujte zdrojové soubory z balíčku do původní složky a znovu spusťte `_INSTALOVAT.bat`. Ponechte své `vysledky` a `.venv`. Podrobnosti k této opravě jsou v `OPRAVA_CAPTCHA.md`.
 
@@ -61,6 +63,8 @@ Postup jednotlivých kroků není odhad celkového času dokončení. Počet web
 Z okna byl odstraněn řádek pro výběr zdroje a TXT souboru. Import zůstává dostupný pouze přes příkazový řádek: `--input soubor.txt --kind profiles` načte profily a `--input soubor.txt --kind websites` načte firemní weby a přeskočí WLW. Doplňte také `--output slozka`; příklady jsou níže. Každý řádek obsahuje jednu URL začínající `https://` nebo `http://`; kódování UTF-8, případně UTF-8 BOM. Relativní WLW profilové cesty jsou také přijímány. Duplicity se odstraní, počet neplatných řádků se vypíše.
 
 Pro pokračování vyberte stejnou složku, stejný vstup a stejné zadání. Cestu k importu lze změnit, pokud jsou jeho bajty stejné. Počet pracovníků, prodlevu, timeout, způsob načítání WLW, i prohlížeč lze změnit. Verze migruje také identitu starého běhu. Změna dotazu, rozsahu stránek nebo obsahu vstupu vyžaduje novou výstupní složku. Kontrola identity chrání před smícháním nesouvisejících výsledků.
+
+Při potvrzeném zrušení běhu aplikace nejprve odstraní jeho profil prohlížeče a potom výsledky. Ošetřuje read-only atributy Crashpad/OneDrive a krátké zámky. Pokud profil zůstává nepřístupný, oznámí chybu a ponechá výsledky; zrušení lze zopakovat po uvolnění adresáře.
 
 ## Výstupy
 

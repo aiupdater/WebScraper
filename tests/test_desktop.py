@@ -200,7 +200,7 @@ class DesktopTests(unittest.TestCase):
             def run(self): raise ValueError('cannot resume')
         self.api._pipeline_factory=Failed
         self.api.start_run(self.payload); self.api._worker.join(2)
-        self.assertEqual([e['type'] for e in self.api.poll_events()],['fatal','idle'])
+        self.assertEqual([e['type'] for e in self.api.poll_events()],['fatal','browser','idle'])
         self.assertFalse(self.api._running)
 
     def test_close_waits_for_saved_work(self):

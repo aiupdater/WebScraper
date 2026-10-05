@@ -43,7 +43,11 @@ Tabulka vlastní vnitřní scroll. Nastavení vlevo vlastní oddělený scroll. 
 
 ## Navigace a nastavení
 
-Levá ikonová lišta zobrazuje pouze funkce, které aplikace skutečně obsahuje. V aktuální verzi je jejím jediným ovládacím prvkem tlačítko pro zobrazení a skrytí sloupce nastavení sběru. Tlačítko používá `aria-controls` a `aria-expanded`, nemění URL ani neposouvá dokument na kotvu. Skrytí nastavení rozšíří hlavní pracovní plochu; opětovné otevření obnoví samostatný scroll nastavení.
+Při čekajícím přepnutí se blokují další kliknutí, ale ikona prohlížeče nebledne; pulzuje jen stavové kolečko. Vypnutý stav je tlumený. Nastavení a Prohlížeč mají neutrální barvu odpovídající ikonám hlavičky. Windows startuje prohlížeč nativně minimalizovaný a bez emulace viewportu, aby obnova uložené pozice nezobrazila okno před jeho skrytím.
+
+Tlačítko `browser-toggle` ovládá stejné samostatné Playwright okno. Stavy jsou vypnutý, skrytý a zobrazený; CAPTCHA je nezávislý příznak. Bridge jen zařadí jeden příkaz, UI čeká na potvrzenou událost a blokuje duplicitní kliknutí. Bootstrap vrací skutečný poslední stav. Skrytí nezastaví sběr, minimalizované okno další kliknutí obnoví. CAPTCHA neotevírá okno automaticky; potvrzení „Ověřeno — pokračovat“ zůstává nutné. První výzva během minimalizace vyvolá jeden pokus o Windows toast. Bez bezpečné identifikace controller neovládá HWND: ověřená vazba CDP zpřístupní vlastní stránku, při selhání přeruší obnovitelný běh a nabídne viditelné pokračování. Rozhodnutí: D-007.
+
+Levá ikonová lišta zobrazuje nastavení a sběrný prohlížeč. Tlačítko nastavení používá `aria-controls` a `aria-expanded`, nemění URL ani neposouvá dokument na kotvu. Skrytí nastavení rozšíří hlavní pracovní plochu; opětovné otevření obnoví samostatný scroll nastavení.
 
 ## Dialogy a zpětná vazba
 
@@ -55,4 +59,4 @@ Cílem je WCAG 2.2 AA. Každé ovládání je dostupné klávesnicí, má vidite
 
 ## Ověřovací brány
 
-Po implementaci musí projít 109 unit testů, `tests/ui_smoke.py`, `tests/desktop_smoke.py`, `git diff --check` a vizuální kontrola světlého/tmavého motivu při 1320 × 850, 1366 × 768, 1000 × 650 a 900 × 560. Samostatně se ověří úspěšný bootstrap, chybějící heslo, úspěšné MySQL skupiny, chyba MySQL, timeout preloaderu, omezený pohyb a všechny stavy řízení běhu.
+Po implementaci musí projít celá unit sada, `tests/ui_smoke.py`, `tests/desktop_smoke.py`, `tests/browser_desktop_smoke.py`, `git diff --check` a vizuální kontrola světlého/tmavého motivu při 1320 × 850, 1366 × 768, 1000 × 650 a 900 × 560. Samostatně se ověří úspěšný bootstrap, chybějící heslo, úspěšné MySQL skupiny, chyba MySQL, timeout preloaderu, omezený pohyb a všechny stavy řízení běhu. Nasazovací brány pro prohlížeč zahrnují skutečnou CAPTCHA, Windows upozornění a změny monitorů/DPI; fixture test je nenahrazuje.

@@ -10,7 +10,7 @@ from system.mysql_contacts import MySQLSettings
 
 
 def main():
-    if len(sys.argv) == 1:
+    if len(sys.argv) == 1 or (len(sys.argv) == 2 and sys.argv[1] == '--lineone'):
         from system.app import App
         return App().mainloop()
     parser = argparse.ArgumentParser(description='WebScraper - profily / weby / e-maily')

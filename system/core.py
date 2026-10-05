@@ -589,7 +589,7 @@ class Store:
 
 
 class Pipeline:
-    def __init__(self, config, folder, callback=lambda event: None, stop=None, fetch_factory=None, continue_event=None, mysql_settings=None, contacts_factory=None, finish_event=None):
+    def __init__(self, config, folder, callback=lambda event: None, stop=None, fetch_factory=None, continue_event=None, mysql_settings=None, contacts_factory=None, finish_event=None, browser_control=None):
         self.config, self.folder = config, Path(folder)
         self.mysql_settings = mysql_settings
         self.contacts_factory = contacts_factory or MySQLContacts
@@ -604,6 +604,7 @@ class Pipeline:
         self.finish_event = finish_event or threading.Event()
         self.profile_origins = {}
         self.site_origins = {}
+        self.browser_control = browser_control
 
     def emit(self, kind, **data):
         if kind == 'result' and data.get('stage') in (2, 4):
@@ -636,6 +637,8 @@ class Pipeline:
     def check(self):
         if self.stop.is_set():
             raise Cancelled()
+        if hasattr(getattr(self, 'fetch', None), 'pump'):
+            self.fetch.pump()
 
     def deliver_contact(self, url, data):
         """Called by coordinator after the raw result is durably saved locally."""
@@ -740,6 +743,8 @@ class Pipeline:
                     self.check()
                     continue
                 ready, _ = wait(futures, timeout=0.2, return_when=FIRST_COMPLETED)
+                if hasattr(self.fetch, 'pump') and not self.stop.is_set():
+                    self.fetch.pump()
                 for future in ready:
                     url = futures.pop(future)
                     try:
@@ -914,7 +919,7 @@ class Pipeline:
                 self.fetch = self.fetch_factory(self.config, self.stop, self.emit)
             else:
                 from system.browser_fetcher import HybridFetcher
-                self.fetch = HybridFetcher(self.config, self.stop, self.emit, self.folder, self.continue_event)
+                self.fetch = HybridFetcher(self.config, self.stop, self.emit, self.folder, self.continue_event, self.browser_control)
             profiles, imported_sites = set(), []
             cfg = self.config
             if self.finish_event.is_set():

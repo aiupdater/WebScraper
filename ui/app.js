@@ -9,6 +9,31 @@
     hasStoppedData:false, isCompleted:false, categories:[], selected:new Set(), categoryBusy:false};
   let api, polling = false, initializing = false, renderTimer, toastTimer, folderTimer, folderInfoRequest = 0;
   let startupFinished = false, startupDatabaseResolved = false, resolveStartupDatabase;
+  let browserState = {visibility:'off',captcha:false,pending:false,fallback:false};
+  let visibleBrowserRetry = false;
+  function renderBrowser(values = browserState) {
+    browserState = {...browserState, ...values};
+    const button = $('browser-toggle');
+    if (!button) return;
+    const text = browserState.pending ? 'Měním zobrazení prohlížeče…' : browserState.visibility === 'off' ? 'Vypnutý' : browserState.fallback ? 'Prohlížeč je otevřený · Přenést do popředí' : browserState.visibility === 'shown' ? 'Prohlížeč je otevřený' : 'Prohlížeč běží na pozadí';
+    const label = 'Prohlížeč · ' + text + (browserState.captcha ? ' · Vyžaduje ověření' : '');
+    button.disabled = browserState.visibility === 'off' || browserState.pending;
+    button.dataset.visibility = browserState.visibility;
+    button.classList.toggle('active', browserState.visibility === 'shown');
+    button.classList.toggle('requires-verification', browserState.captcha);
+    button.setAttribute('aria-pressed', String(browserState.visibility === 'shown'));
+    button.setAttribute('aria-busy', String(browserState.pending));
+    button.setAttribute('aria-label', label); button.title = label;
+    button.querySelector('.browser-badge').hidden = !browserState.captcha;
+    $('browser-status').textContent = label;
+  }
+  $('browser-toggle')?.addEventListener('click', async () => {
+    if (browserState.pending || browserState.visibility === 'off') return;
+    renderBrowser({pending:true});
+    const result = await call('toggle_browser_visibility');
+    if (!result.ok) {renderBrowser(result.browser || {pending:false}); toast(result.message || 'Zobrazení prohlížeče se nepodařilo změnit.');}
+    // An accepted command remains busy until the owner thread publishes its result.
+  });
   const startupDatabase = new Promise(resolve => { resolveStartupDatabase = resolve; });
 
   function startupProgress(percent, phase, stage) {
@@ -235,7 +260,7 @@
     return {portal:$('portal').value, categories:state.categories.filter(value=>state.selected.has(value)), max_pages:$('pages').value, start_page:$('start-page').value,
       workers:$('workers').value, delay:$('delay').value, output_mode:$('destination').value,
       skip_existing:$('skip-existing').checked, save_best_email:$('save-best-email').checked, group_id:$('group').value,
-      wlw_mode:$('wlw-mode').value, browser_channel:$('browser').value, folder:$('folder').value};
+      wlw_mode:$('wlw-mode').value, browser_channel:$('browser').value, folder:$('folder').value, visible_browser:visibleBrowserRetry};
   }
   function categorySummary() {
     const selected = state.categories.filter(value=>state.selected.has(value));
@@ -629,6 +654,13 @@
       if ($('db-status')) $('db-status').textContent = `Uloženo: ${number(event.counts.INSERTED)} · čeká: ${number(event.counts.PENDING)}`;
     } else if (event.type === 'request') {
       $('current-request').textContent = 'Právě načítám: ' + event.url; $('current-request').title = event.url;
+    } else if (event.type === 'browser') {
+      renderBrowser(event);
+    } else if (event.type === 'browser_retry') {
+      visibleBrowserRetry = true;
+      notice('Pokračování ve viditelném prohlížeči', event.message);
+    } else if (event.type === 'browser_warning') {
+      toast(event.message);
     } else if (event.type === 'manual') {
       state.manual = event.active && !state.stopping; $('verification').hidden = !state.manual;
       $('verify').disabled = !state.manual;
@@ -768,6 +800,8 @@
     }
     startupProgress(58, 'Načítám nastavení, kategorie a uložený běh…', 'config');
     state.ready = true; state.settings = data.settings;
+    renderBrowser(data.browser || {visibility:'off',captcha:false,pending:false,fallback:false});
+    visibleBrowserRetry = Boolean(data.visible_browser_retry);
     if (data.db_connected) {
       if ($('db-dot')) $('db-dot').className = 'status-dot connected';
       if ($('mysql-toggle')) $('mysql-toggle').title = 'Nastavení MySQL · Připojeno';

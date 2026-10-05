@@ -61,7 +61,9 @@ Základní velikost desktopového rozhraní je 14 px. Husté pomocné popisky mo
 
 ## Layout
 
-Na desktopu je vlevo 80px ikonová lišta, vedle ní 240px nastavení a vpravo hlavní pracovní plocha. Dokud nevzniknou další skutečné sekce, lišta obsahuje pouze tlačítko pro otevření a skrytí nastavení; nehotové navigační odkazy se nezobrazují. Po skrytí nastavení se hlavní pracovní plocha plynule roztáhne. Hlavička má přibližně 61 px a logo FEBA-MONT stojí vlevo před názvem produktu. Hlavní plocha používá modulární karty a 4px násobky rozestupů. Tabulka vlastní svůj posuvník; dlouhé nastavení vlastní svůj posuvník. Minimální podporované okno zůstává 900 × 560.
+Levá lišta obsahuje také sběrný prohlížeč. Ikony nastavení a prohlížeče používají neutrální barvu ikon v hlavičce. Prohlížeč má šedý vypnutý indikátor, informační indikátor na pozadí, zelený indikátor a zvýraznění při zobrazení a samostatný oranžový odznak ověření. Při přepínání zůstává ikona plně viditelná a pulzuje jen stavové kolečko; tlumení je vyhrazené vypnutému stavu. Textový a přístupný stav doplňuje barvu; stav ověření se neváže na viditelnost okna.
+
+Na desktopu je vlevo 80px ikonová lišta, vedle ní 240px nastavení a vpravo hlavní pracovní plocha. Lišta obsahuje nastavení a ovládání sběrného prohlížeče; nehotové navigační odkazy se nezobrazují. Po skrytí nastavení se hlavní pracovní plocha plynule roztáhne. Hlavička má přibližně 61 px a logo FEBA-MONT stojí vlevo před názvem produktu. Hlavní plocha používá modulární karty a 4px násobky rozestupů. Tabulka vlastní svůj posuvník; dlouhé nastavení vlastní svůj posuvník. Minimální podporované okno zůstává 900 × 560.
 
 Při užším okně může lišta klesnout na 64 px. Mobilní skládání je sekundární; nesmí poškodit desktopový WebView2 ani vytvořit nedostupná pole při 200% zvětšení.
 

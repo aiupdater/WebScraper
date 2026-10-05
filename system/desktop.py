@@ -5,19 +5,25 @@ import json
 import os
 from pathlib import Path
 import queue
-import shutil
 import subprocess
 import sys
 import threading
 from system.core import Config, Pipeline
 from system.mysql_contacts import MySQLSettings, MySQLContacts
 from system.paths import APP_ROOT, config_path
+from system.browser_control import BrowserControl
+from system.notifications import notify_verification
+from system.run_cleanup import remove_run_folder
 
 class DesktopAPI:
     def __init__(self, base=None, *, settings=None, pipeline_factory=Pipeline,
                  contacts_factory=MySQLContacts):
         self._base = Path(base or APP_ROOT).resolve()
         self._window = None
+        self._browser_control = BrowserControl()
+        self._minimized = False
+        self._visible_browser_retry = False
+        self._browser_hidden_supported = True
         self._pipeline_factory, self._contacts_factory = pipeline_factory, contacts_factory
         self._events = queue.Queue()
         self._lock = threading.RLock()
@@ -95,7 +101,21 @@ class DesktopAPI:
         with self._lock:
             return {'ok': True, 'categories': list(self._categories), 'categories_error': self._categories_error, 'folder': self._folder,
                     'settings': self._public_settings(), 'settings_error': self._settings_error,
-                    'running': self._running, 'groups': self._groups}
+                    'running': self._running, 'groups': self._groups, 'browser': self._browser_control.snapshot(),
+                    'visible_browser_retry': self._visible_browser_retry}
+
+    def toggle_browser_visibility(self):
+        with self._lock:
+            accepted = self._running and self._browser_control.toggle()
+            return {'ok': bool(accepted), 'browser': self._browser_control.snapshot()}
+
+    def _on_minimized(self):
+        with self._lock:
+            self._minimized = True
+
+    def _on_restored(self):
+        with self._lock:
+            self._minimized = False
 
     def poll_events(self):
         events = []
@@ -108,7 +128,11 @@ class DesktopAPI:
 
     def _emit(self, event):
         with self._lock:
+            if event['type'] == 'browser_retry':
+                self._visible_browser_retry = True
             if event['type'] == 'manual':
+                if event['active'] and not self._manual and self._minimized:
+                    notify_verification()
                 self._manual = bool(event['active'])
         self._events.put(event)
 
@@ -170,12 +194,14 @@ class DesktopAPI:
             self._discard_requested = False
             self._manual = False
             self._running = True
+            self._browser_control.reset()
+            self._browser_control.hidden = self._browser_hidden_supported and not bool(data.get('visible_browser', self._visible_browser_retry))
             settings, folder = self._settings, self._folder
             def work():
                 try:
                     self._pipeline_factory(config, Path(folder), self._emit, self._stop,
                         continue_event=self._continue, mysql_settings=settings,
-                        finish_event=self._finish).run()
+                        finish_event=self._finish, browser_control=self._browser_control).run()
                 except Exception as exc:
                     self._emit({'type': 'fatal', 'message': self._error(exc)['message']})
                 finally:
@@ -184,14 +210,16 @@ class DesktopAPI:
                         results_root = (self._base / 'vysledky').resolve()
                         if results_root in run_folder.parents and run_folder != results_root:
                             try:
-                                shutil.rmtree(run_folder)
+                                remove_run_folder(run_folder, results_root)
                                 self._events.put({'type': 'discarded', 'folder': str(run_folder)})
-                            except OSError as exc:
+                            except (OSError, ValueError) as exc:
                                 self._events.put({'type': 'fatal', 'message': f'Běh se nepodařilo zahodit: {exc}'})
                         else:
                             self._events.put({'type': 'fatal', 'message': 'Z bezpečnostních důvodů lze zahodit pouze běh ve složce vysledky.'})
                     with self._lock:
                         self._running = self._manual = False
+                        self._browser_control.reset()
+                        self._events.put({'type': 'browser', **self._browser_control.snapshot()})
                         self._events.put({'type': 'idle'})
             self._worker = threading.Thread(target=work, name='wlw-pipeline', daemon=False)
             self._worker.start()
@@ -234,8 +262,8 @@ class DesktopAPI:
             if not (run_folder / 'stav.sqlite3').is_file():
                 return {'ok': False, 'message': 'Tato složka neobsahuje uložený běh ke zrušení.'}
             try:
-                shutil.rmtree(run_folder)
-            except OSError as exc:
+                remove_run_folder(run_folder, results_root)
+            except (OSError, ValueError) as exc:
                 return {'ok': False, 'message': f'Běh se nepodařilo zrušit: {exc}'}
             self._events.put({'type': 'discarded', 'folder': str(run_folder)})
             return {'ok': True}

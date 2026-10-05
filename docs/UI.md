@@ -1,5 +1,9 @@
 # Desktopové rozhraní FebaMont
 
+Ikony Nastavení a Prohlížeč jsou sladěné s hlavičkou. Při přepínání prohlížeče ikona nebledne; pulzuje jen stavové kolečko. Tlumené tlačítko znamená vypnutý prohlížeč.
+
+Levá lišta obsahuje tlačítko **Prohlížeč**: mimo běh je vypnuté, během sběru ukazuje skryté nebo zobrazené okno. Přepnutí má busy stav až do potvrzení vláknem sběru. Odznak CAPTCHA zůstává aktivní nezávisle na viditelnosti. Tlačítko lze ovládat Enterem i mezerníkem; přístupný popis oznamuje skutečný stav. Při nemožnosti bezpečné obnovy nabídne pokračování ve viditelném režimu. Omezený pohyb platí i pro indikátor čekající akce.
+
 Lokální HTML/CSS rozhraní uvnitř Python okna pomocí pywebview 6.1. Scraper, pokračování běhů, exporty a MySQL adapter zůstávají beze změny. Nejde o vzdálenou webovou aplikaci.
 
 ## Aktualizace

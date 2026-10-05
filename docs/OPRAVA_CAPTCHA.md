@@ -13,7 +13,7 @@ Na doložené odpovědi AWS WAF nestačí samotný HTTP klient: stránka vyžadu
 5. Vyberte **Prohlížeč + ruční ověření**, prohlížeč **Chromium**, počáteční stránku **1**, počet stránek **1** a prodlevu **2** sekundy pro první malý běh.
 6. Kontrola robots.txt je odstraněná; není potřeba nic přepínat.
 7. Zvolte původní výstupní složku se stejným zadáním pro pokračování, nebo novou pro test s jiným počtem stránek. Nově lze změnit způsob přístupu u stejné úlohy bez nové složky.
-8. Klikněte **Spustit / pokračovat**. V otevřeném prohlížeči případnou CAPTCHA ručně dokončete. Vraťte se do aplikace a stiskněte **Ověřeno — pokračovat**.
+8. Klikněte **Spustit / pokračovat**. Na Windows desktopu se prohlížeč spustí skrytě. Při odznaku ověření jej zobrazte tlačítkem **Prohlížeč** v levé liště a CAPTCHA ručně dokončete. Vraťte se do aplikace a stiskněte **Ověřeno — pokračovat**. Skrytí okna sběr nezastaví; zavření ano. CLI otevírá prohlížeč viditelně.
 
 Během ověření prohlížeč nezavírejte a nepřecházejte v jeho hlavní záložce na jiné stránky. Tlačítko potvrzení samo ověření neprovádí. Pokud zůstane zobrazená ochranná stránka, sběr se nerozběhne. Na ověření se čeká nejvýše 10 minut. Zastavení nebo zavření okna uloží práci; další spuštění opakuje nedokončenou položku.
 

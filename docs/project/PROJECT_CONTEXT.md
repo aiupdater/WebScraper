@@ -1,6 +1,6 @@
 # WebScraper — společný kontext projektu
 
-Aktualizováno: 30. 9. 2026
+Aktualizováno: 4. 10. 2026
 
 Tento soubor je stručný aktuální přehled pro všechny chaty pracující v tomto repozitáři. Pravidla práce jsou v kořenovém `AGENTS.md`; důvody dlouhodobých rozhodnutí jsou v `docs/project/DECISIONS.md`. Při rozporu se vždy ověří skutečný stav zdrojového kódu a testů.
 
@@ -13,13 +13,13 @@ Windows desktopová aplikace získává firemní profily z WLW.de a 11880.com, d
 - `system/app.py` spouští pywebview okno; běžný uživatelský vstup je `_SPUSTIT.bat`.
 - `system/desktop.py` propojuje HTML/JavaScript UI s Python backendem a řídí životní cyklus desktopového běhu.
 - `system/core.py` obsahuje konfiguraci, pipeline, perzistenci průběhu, parsování, exporty a doménovou logiku.
-- `system/browser_fetcher.py` obsluhuje viditelný Playwright prohlížeč, ruční ověření a portálově specifické stránkování.
+- `system/browser_fetcher.py` obsluhuje Playwright prohlížeč, ruční ověření a portálově specifické stránkování. Windows desktop startuje skrytě, CLI a jiné systémy viditelně. `system/browser_window.py` ověřuje proces/profil a HWND, `system/browser_control.py` vlastní veřejný stav a frontu jednoho příkazu, `system/notifications.py` je volitelný Windows toast adaptér.
 - `system/mysql_contacts.py` zajišťuje nastavení a odložené předání kontaktů do MySQL.
 - `system/paths.py` určuje kanonické cesty aplikace; `system/run_all.py` je CLI vstup.
 - `ui/index.html`, `ui/app.js`, `ui/app.css` a `ui/theme.js` tvoří desktopové rozhraní. `ui/app.css` je jediný vlastník vizuálních tokenů a komponent; lokální Poppins a Inter jsou v `ui/assets/fonts/`. DOM ID a JS handlery jsou funkční smlouva, ne pouze vzhled.
 - Lineone designový systém je popsán v kořenovém `DESIGN.md`, chování a vlastnictví komponent v `docs/project/UX-CONTRACT.md` a strojově čitelný rozsah auditu v `premium-ui.json`.
 - Při startu je pracovní plocha skrytá preloaderem, který zobrazuje živou fázi, procenta a progress bar. Čeká na Python bootstrap a úvodní výsledek EmailApp/MySQL; chybějící heslo nebo chyba MySQL zpřístupní aplikaci a nabídnou opravu místo trvalého zablokování.
-- Levá ikonová lišta nyní obsahuje jedinou funkční akci pro otevření a skrytí sloupce nastavení. Nehotové odkazy na budoucí sekce se nevykreslují; tlačítko nemění URL ani neposouvá dokument. Logo FEBA-MONT je v hlavičce vlevo před názvem aplikace.
+- Levá ikonová lišta obsahuje nastavení a tlačítko Prohlížeč. Tlačítko přepíná stejné okno bez zastavení sběru; stav potvrzuje vlastnické vlákno. CAPTCHA má samostatný odznak a okno neotevírá; při minimalizaci aplikace první výzva zkusí jeden toast. Bez ověřeného HWND se obnoví vlastní stránka přes CDP, při neúspěchu se zachová běh a nabídne viditelné pokračování.
 - Jednotná motion vrstva v `ui/app.css` a `ui/app.js` animuje otevření i zavření dialogů a backdropu, toast zprávy, dynamické panely a změnu šířky nastavení. Používá nativní CSS/Web Animations API bez externí runtime závislosti a respektuje systémové i uživatelské omezení pohybu.
 - `config/` obsahuje distribuovanou konfiguraci. Lokální `config/mysql.local.json` může obsahovat tajné údaje a nesmí se sdílet.
 - `vysledky/`, `.ui-state/`, `.venv/` a testovací dočasné adresáře jsou místní provozní stav, nikoli zdrojová pravda projektu.
@@ -40,12 +40,20 @@ Příkazy spouštěj z kořene repozitáře:
 & '.\.venv\Scripts\python.exe' -m unittest discover -s tests -q
 & '.\.venv\Scripts\python.exe' tests\ui_smoke.py
 & '.\.venv\Scripts\python.exe' tests\desktop_smoke.py
+& '.\.venv\Scripts\python.exe' tests\browser_desktop_smoke.py
 git diff --check
 ```
 
 Testy používají `tempfile` a na omezeném Windows hostu mohou skončit `PermissionError`. Takový běh není aplikační regrese ani úspěšné ověření. Použij skutečně zapisovatelný dočasný adresář nebo schválený běh mimo sandbox a u výsledku vždy uveď, co přesně proběhlo.
 
 ## Aktuální stav ověření
+
+- Následná oprava dne 4. 10. 2026: prošlo 140 unit testů, UI smoke a skutečný WebView2 smoke. Chromium a Chrome prošly i monitorovaným startem a opětovným spuštěním stejného profilu bez zaznamenaného viditelného okna. Windows start používá `--start-minimized` bez emulovaného viewportu. UI při přepínání nebledne; pulzuje kolečko, ikony lišty odpovídají hlavičce.
+- Rušení běhu přes `system/run_cleanup.py` odstraňuje read-only atributy Chromium/OneDrive, krátce opakuje dočasné zámky a maže profil před výsledky. Při trvale zamčeném profilu zůstávají uložené výsledky. Skutečný Windows test ověřil read-only Crashpad včetně desktopového bridge. Kontrola se omezuje na výslovně rušený běh uvnitř `vysledky`.
+
+- Dne 4. 10. 2026 prošlo 135 unit testů, rozšířený UI smoke a skutečný WebView2 desktop smoke. `browser_desktop_smoke.py` ověřil na skutečných Windows oknech Chromium a Chrome skrytý stav po startu, zobrazení/skrytí, přepnutí během zpožděné síťové odpovědi, načítání skrytě, obnovu minimalizace, stejnou stránku, nedotčené souběžné okno a obnovu po ztrátě identifikace přes CDP. Zavření stránky zachovalo `BROWSER_CLOSED`. Edge není dostupný pro Playwright a zůstává neověřený.
+- Přísný premium UI audit neprošel: 34 nálezů je již ve výchozí revizi (zejména nedetekované JS handlery), dalších 35 pochází z lokální ignorované experimentální `ui/lineone/`. Porovnání s HEAD neukázalo nový produkční nález. JSON je v lokálním `tests/artifacts/premium-audit.json`; runtime smoke ověřil změněné ovládání. Experimentální vstup `--lineone` bez nového tlačítka zachovává viditelný prohlížeč.
+- Skutečná CAPTCHA, viditelné systémové upozornění, úplná absence krátkého probliknutí při startu a změny více monitorů/DPI nebyly ověřeny. Deduplikace toastu a CAPTCHA chování jsou pokryty simulovanými testy. Tyto chybějící důkazy brání tvrzení o plném splnění nasazovacích kritérií plánu.
 
 - Výchozí revize při založení tohoto kontextu: větev `main`, commit `208901d` (`WebScraper: current verified version`).
 - Dne 30. 9. 2026 prošlo mimo omezený sandbox všech 109 unit testů, `tests/ui_smoke.py` i `tests/desktop_smoke.py`. Desktop smoke ověřil skutečný WebView2, Python bootstrap, oba portály, práci se složkou a nastavení MySQL. Nešlo o živý hromadný scraping ani připojení k produkční databázi.

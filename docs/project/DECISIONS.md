@@ -1,5 +1,13 @@
 # WebScraper — dlouhodobá rozhodnutí
 
+## D-007: Samostatný prohlížeč s řízenou viditelností
+
+- Datum: 4. 10. 2026
+- Stav: platí
+- Rozhodnutí: Windows desktop spouští samostatný Playwright prohlížeč skrytě a ovládá jeho viditelnost z levé lišty. Nevkládá cizí HWND do pywebview. CLI zůstává viditelné.
+- Důvod: Playwright zachovává vlastnictví stránky, profilu a ručního ověření. Windows vrstva ovládá jen bezpečně ověřené okno aktuálního profilu a procesu.
+- Důsledek: CAPTCHA je samostatný příznak a okno neotevírá. Příkazy běží ve vlastnickém vlákně. Nejistá identifikace vyvolá obnovu přes vlastní CDP stránku; neúspěch zastaví obnovitelný běh a nabídne viditelný režim. Připravenost k nasazení vyžaduje skutečné desktopové důkazy, včetně samostatně ověřené CAPTCHA a monitorů/DPI.
+
 Tento soubor zachycuje rozhodnutí, která mají ovlivnit více budoucích úkolů. Nové rozhodnutí přidej pouze tehdy, když bude užitečné i pro další chaty. Existující záznam nemaž; změněné rozhodnutí označ jako nahrazené a připoj odkaz na nové ID.
 
 ## D-001: Repozitářová dokumentace je zdroj trvalého projektového kontextu

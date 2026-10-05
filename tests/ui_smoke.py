@@ -175,7 +175,57 @@ def main():
             page.add_init_script(MOCK)
             page.goto(f'http://127.0.0.1:{server.server_port}')
             expect(page.locator('#start')).to_be_enabled()
-            expect(page.locator('.main-rail .rail-button')).to_have_count(1)
+            expect(page.locator('.main-rail .rail-button')).to_have_count(2)
+            expect(page.locator('#startup-loader')).to_have_count(0)
+            expect(page.locator('#browser-toggle')).to_be_disabled()
+            page.evaluate("events.push({type:'browser',visibility:'hidden',captcha:false,pending:false,fallback:false})")
+            expect(page.locator('#browser-toggle')).to_be_enabled()
+            expect(page.locator('#browser-toggle')).to_have_attribute('aria-label', 'Prohlížeč · Prohlížeč běží na pozadí')
+            idle_browser_style = page.locator('#browser-toggle').evaluate('el => ({color:getComputedStyle(el).color,opacity:getComputedStyle(el).opacity})')
+            assert idle_browser_style['opacity'] == '1'
+            page.evaluate("window.pywebview.api.toggle_browser_visibility=async()=>{window.toggleCount=(window.toggleCount||0)+1;return {ok:true}}; void 0")
+            page.locator('#browser-toggle').focus()
+            page.keyboard.press('Enter')
+            expect(page.locator('#browser-toggle')).to_have_attribute('aria-busy', 'true')
+            expect(page.locator('#browser-toggle')).to_be_disabled()
+            assert page.locator('#browser-toggle').evaluate('el => getComputedStyle(el).opacity') == '1'
+            assert page.locator('#browser-toggle').evaluate('el => getComputedStyle(el).color') == idle_browser_style['color']
+            page.emulate_media(reduced_motion='no-preference')
+            assert page.locator('.browser-indicator').evaluate('el => getComputedStyle(el).animationName') == 'browser-pulse'
+            page.emulate_media(reduced_motion='reduce')
+            assert page.locator('.browser-indicator').evaluate('el => getComputedStyle(el).animationName') == 'none'
+            assert page.evaluate('window.toggleCount') == 1, page.evaluate('({count:window.toggleCount, errors:window.events, toast:document.querySelector("#toast").textContent})')
+            page.evaluate("events.push({type:'browser',visibility:'shown',captcha:true,pending:false})")
+            expect(page.locator('#browser-toggle')).to_have_attribute('aria-pressed', 'true')
+            expect(page.locator('.browser-badge')).to_be_visible()
+            expect(page.locator('#browser-toggle')).to_have_attribute('aria-label', 'Prohlížeč · Prohlížeč je otevřený · Vyžaduje ověření')
+            page.locator('#browser-toggle').focus()
+            page.keyboard.press('Space')
+            expect(page.locator('#browser-toggle')).to_have_attribute('aria-busy', 'true')
+            page.evaluate("events.push({type:'browser',visibility:'hidden',captcha:true,pending:false})")
+            expect(page.locator('#browser-toggle')).to_have_attribute('aria-pressed', 'false')
+            expect(page.locator('.browser-badge')).to_be_visible()
+            page.click('#browser-toggle')
+            expect(page.locator('#browser-toggle')).to_have_attribute('aria-busy', 'true')
+            assert page.evaluate('window.toggleCount') == 3
+            page.evaluate("events.push({type:'browser',visibility:'off',captcha:false,pending:false})")
+            expect(page.locator('#browser-toggle')).to_be_disabled()
+            expect(page.locator('.browser-badge')).to_be_hidden()
+            assert float(page.locator('#browser-toggle').evaluate('el => getComputedStyle(el).opacity')) < 1
+            assert page.locator('#sidebar-toggle').evaluate('el => getComputedStyle(el).color') == page.locator('#mysql-toggle').evaluate('el => getComputedStyle(el).color')
+            for dark in (False, True):
+                for width, height in ((1320, 850), (900, 560)):
+                    page.set_viewport_size(dict(width=width, height=height))
+                    page.evaluate('(dark) => document.documentElement.classList.toggle("theme-dark", dark)', dark)
+                    for visibility, captcha in (('off', False), ('hidden', False), ('shown', False), ('shown', True)):
+                        page.evaluate('(v) => events.push({type:"browser",...v,pending:false})', dict(visibility=visibility, captcha=captcha))
+                        expect(page.locator('#browser-toggle')).to_have_attribute('aria-pressed', str(visibility == 'shown').lower())
+                        expect(page.locator('.browser-badge')).to_be_visible() if captcha else expect(page.locator('.browser-badge')).to_be_hidden()
+                        button = page.locator('#browser-toggle').bounding_box()
+                        assert button and button['x'] >= 0 and button['y'] + button['height'] <= height
+                    page.screenshot(path=str(previews/f'browser-{"dark" if dark else "light"}-{width}.png'))
+            page.set_viewport_size(dict(width=1320, height=850))
+            page.evaluate('document.documentElement.classList.remove("theme-dark"); events.push({type:"browser",visibility:"off",captcha:false,pending:false})')
             expect(page.locator('#sidebar-toggle')).to_have_attribute('aria-expanded', 'true')
             expect(page.locator('.product-heading .brand-logo')).to_be_visible()
             page.click('#sidebar-toggle')

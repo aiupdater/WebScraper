@@ -67,6 +67,8 @@
   <div class="rail-brand" aria-label="WebScraper"><svg class="icon"><use href="#i-search"/></svg></div>
   <div class="rail-nav">
     <button class="rail-button active" id="sidebar-toggle" type="button" aria-label="Skrýt nastavení sběru" title="Skrýt nastavení sběru" aria-controls="sidebar-panel" aria-expanded="true"><svg class="icon"><use href="#i-settings"/></svg></button>
+    <button class="rail-button browser-button" id="browser-toggle" type="button" disabled aria-label="Prohlížeč · Vypnutý" title="Prohlížeč · Vypnutý" aria-describedby="browser-status" aria-pressed="false"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 6.5h.1M10 6.5h.1"/></svg><span class="browser-indicator" aria-hidden="true"></span><span class="browser-badge" hidden aria-hidden="true">!</span></button>
+    <span id="browser-status" class="sr-only" role="status">Prohlížeč · Vypnutý</span>
   </div>
 </nav>
 <div class="desktop-shell" id="application-shell" aria-hidden="true">

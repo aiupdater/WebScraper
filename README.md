@@ -20,7 +20,7 @@ Po uspořádání souborů stačí aplikaci znovu otevřít. Existující `.venv
 3. Spusťte `SPUSTIT.bat`.
 4. V poli **Kategorie** zaškrtněte požadované kategorie. Při prvním spuštění je připravená **Tiefbau**, další si můžete přidat nebo smazat. Aplikace postupně získá firemní profily ze všech vybraných kategorií. Nastavte počáteční stránku a maximální počet stránek pro každou kategorii.
 5. Pro WLW zvolte **Prohlížeč + ruční ověření** a **Chromium** (instalátor jej stáhne). Microsoft Edge / Google Chrome lze vybrat, pokud je již máte nainstalované.
-6. Zvolte výstupní složku a stiskněte **Spustit / pokračovat**. Při CAPTCHA ji vyřešte přímo v otevřeném okně a potom v aplikaci stiskněte **Ověřeno — pokračovat**.
+6. Zvolte výstupní složku a stiskněte **Spustit / pokračovat**. Na Windows desktopu prohlížeč startuje skrytě. Tlačítko **Prohlížeč** v levé liště zobrazuje a skrývá stejné okno; skrytí nezastaví sběr. Při odznaku **Vyžaduje ověření** otevřete prohlížeč tlačítkem, dokončete CAPTCHA a potom stiskněte **Ověřeno — pokračovat**.
 
 **Aktualizace původní verze:** zavřete aplikaci, překopírujte zdrojové soubory z balíčku do původní složky a znovu spusťte `INSTALOVAT.bat`. Ponechte své `vysledky` a `.venv`. Podrobnosti k této opravě jsou v `OPRAVA_CAPTCHA.md`.
 

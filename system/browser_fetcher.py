@@ -6,6 +6,10 @@ Jedna instance je vlastněna vláknem Pipeline od vytvoření až po zavření.
 from __future__ import annotations
 
 import threading
+import queue
+import sys
+import json
+from concurrent.futures import ThreadPoolExecutor
 import time
 from pathlib import Path
 from urllib.parse import unquote, urlsplit, parse_qs
@@ -48,7 +52,7 @@ def content_ready(html, url):
 
 class BrowserFetcher:
     def __init__(self, config, stop, emit, folder, continue_event, http,
-                 *, context_factory=None, clock=time.monotonic):
+                 *, context_factory=None, clock=time.monotonic, browser_control=None, controller_factory=None):
         self.config, self.stop, self.emit = config, stop, emit
         self.folder, self.continue_event, self.http = Path(folder), continue_event, http
         self.context_factory, self.clock = context_factory, clock
@@ -58,6 +62,85 @@ class BrowserFetcher:
         self.navigation_error = ''
         self.waiting = False
         self.manual_problem = None
+        self.control = browser_control
+        self.controller_factory = controller_factory
+        self.controller = self.cdp = None
+        self.navigation_marker = None
+        self.hidden_mode = bool(browser_control and browser_control.hidden and sys.platform == 'win32')
+
+    def browser_state(self, **values):
+        if self.control:
+            self.emit('browser', **self.control.update(**values))
+
+    def recover_window(self):
+        # This session is bound to this Playwright page, never to an arbitrary HWND.
+        try:
+            if self.cdp is None:
+                self.cdp = self.context.new_cdp_session(self.page)
+            window = self.cdp.send('Browser.getWindowForTarget')['windowId']
+            self.cdp.send('Browser.setWindowBounds', {'windowId': window, 'bounds': {'windowState': 'normal'}})
+            from system.browser_window import recovery_bounds
+            bounds = recovery_bounds() if sys.platform == 'win32' else dict(left=40, top=40, width=1000, height=700)
+            self.cdp.send('Browser.setWindowBounds', {'windowId': window, 'bounds': bounds})
+            actual = self.cdp.send('Browser.getWindowBounds', {'windowId': window})['bounds']
+            if actual.get('windowState') != 'normal' or actual['left'] < bounds['left'] or actual['top'] < bounds['top']:
+                raise RuntimeError('Obnova okna nebyla potvrzena.')
+            self.page.bring_to_front()
+            self.controller = None
+            self.browser_state(visibility='shown', fallback=True, pending=False)
+            message = 'Ovládání okna není dostupné. Prohlížeč zůstává viditelný; tlačítko jej pouze přenese do popředí.'
+            self.emit('log', level='WARN', message=message)
+            self.emit('browser_warning', message=message)
+        except Exception as exc:
+            try:
+                self.close()
+            except Exception:
+                self.emit('log', level='WARN', message='Ukončení nedostupného sběrného prohlížeče nebylo potvrzeno.')
+            self.emit('browser_retry', message='Okno nelze zpřístupnit. Uložený běh je zachovaný. Tlačítkem Pokračovat jej spustíte ve viditelném režimu.')
+            raise BlockingAccessError('Okno nelze bezpečně zpřístupnit. Uložený běh zůstává zachovaný. Pokračujte ve viditelném režimu prohlížeče.', 'BROWSER_WINDOW_UNAVAILABLE') from exc
+
+    def service_commands(self):
+        if threading.get_ident() != self.owner:
+            raise RuntimeError('Příkazy prohlížeče se provádějí ve vlákně sběru.')
+        if not self.control or not self.page:
+            return
+        try:
+            command = self.control.commands.get_nowait()
+        except queue.Empty:
+            return
+        if command == 'toggle':
+            try:
+                if self.controller:
+                    was_visible = self.controller.visible()
+                    if was_visible:
+                        self.controller.hide()
+                    else:
+                        self.controller.show()
+                    actual = self.controller.visible()
+                    self.browser_state(visibility='shown' if actual else 'hidden', pending=False)
+                    if actual == was_visible:
+                        self.emit('browser_warning', message='Windows nepotvrdil změnu zobrazení prohlížeče. Zkuste tlačítko znovu.')
+                else:
+                    self.page.bring_to_front()
+                    self.browser_state(visibility='shown', pending=False)
+            except Exception:
+                try:
+                    actual = self.controller.visible()
+                except Exception:
+                    # Never use a stale/unverified HWND. CDP can safely restore our page.
+                    self.recover_window()
+                else:
+                    self.browser_state(visibility='shown' if actual else 'hidden', pending=False)
+                    self.emit('browser_warning', message='Zobrazení prohlížeče se nepodařilo změnit. Zkuste tlačítko znovu.')
+
+    def cooperative(self, operation, *args):
+        if not self.control:
+            return operation(*args)
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(operation, *args)
+            while not future.done():
+                self.tick()
+            return future.result()
 
     def check(self):
         if threading.get_ident() != self.owner:
@@ -84,6 +167,20 @@ class BrowserFetcher:
             if self.config.browser_channel != 'chromium':
                 options['channel'] = self.config.browser_channel
             profile = self.folder / ('prohlizec_' + self.config.browser_channel)
+            if self.hidden_mode:
+                try:
+                    from system.browser_window import BrowserWindowController
+                    self.controller = (self.controller_factory or BrowserWindowController)(profile)
+                    # Native startup minimization prevents painting even when Chromium
+                    # restores saved window placement. Avoid viewport emulation resizing
+                    # the window back onto the desktop before HWND identification.
+                    options['viewport'] = None
+                    options['no_viewport'] = True
+                    options['args'] = ['--start-minimized', '--window-position=-32000,-32000', '--window-size=1280,900', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows']
+                except Exception:
+                    # If ownership cannot be established before launch, start visibly.
+                    self.controller = None
+                    self.emit('log', level='WARN', message='Skrytý start není dostupný. Prohlížeč bude otevřený.')
             try:
                 self.context = self.playwright.chromium.launch_persistent_context(str(profile), **options)
             except Exception as exc:
@@ -99,6 +196,18 @@ class BrowserFetcher:
         # Povolujeme hlavní stránku pouze na vybraném portálu; vložené CAPTCHA a běžné
         # prostředky třetích stran potřebuje prohlížeč k ručnímu ověření.
         self.context.route('**/*', self.guard_navigation)
+        if self.hidden_mode and self.controller:
+            try:
+                for _ in range(25):
+                    if self.controller.find():
+                        break
+                    self.page.wait_for_timeout(100)
+                self.controller.hide()
+                self.browser_state(visibility='hidden')
+            except Exception:
+                self.recover_window()
+        else:
+            self.browser_state(visibility='shown', fallback=True)
         self.emit('log', message=f'Otevřen prohlížeč {self.config.browser_channel}. Portál se zpracovává postupně.')
 
     def guard_navigation(self, route):
@@ -118,15 +227,28 @@ class BrowserFetcher:
 
     def tick(self):
         self.check()
+        self.service_commands()
         # Playwright při tomto čekání obsluhuje události načtení / ručního ověření.
         self.page.wait_for_timeout(200)
         self.check()
+        self.refresh_visibility()
+
+    def refresh_visibility(self):
+        if self.controller and not self.control.snapshot()['pending']:
+            try:
+                actual = 'shown' if self.controller.visible() else 'hidden'
+                if actual != self.control.snapshot()['visibility']:
+                    self.browser_state(visibility=actual)
+            except Exception:
+                self.recover_window()
 
     def snapshot(self):
         self.check()
         if self.navigation_error:
             raise BlockingAccessError(self.navigation_error, 'UNEXPECTED_REDIRECT')
         try:
+            if self.navigation_marker is not None and self.page.evaluate('window.__webscraperNavigation === ' + json.dumps(self.navigation_marker)):
+                return None
             html = self.page.content()
         except Exception:
             self.check()
@@ -139,7 +261,9 @@ class BrowserFetcher:
         deadline = self.clock() + self.config.manual_timeout
         self.continue_event.clear()
         self.waiting = True
-        self.page.bring_to_front()
+        if not self.hidden_mode:
+            self.page.bring_to_front()
+        self.browser_state(captcha=True)
         self.emit('log', level='WARN', message=message + ' Sběr čeká na ruční ověření a potvrzení.')
         self.emit('manual', active=True, url=url,
                   message='Dokončete ověření v otevřeném prohlížeči. Pak stiskněte Ověřeno — pokračovat.')
@@ -158,6 +282,7 @@ class BrowserFetcher:
             raise BlockingAccessError('Vypršel čas na ruční ověření. Uloženou práci lze obnovit.', 'MANUAL_TIMEOUT')
         finally:
             self.waiting = False
+            self.browser_state(captcha=False)
             self.emit('manual', active=False, url=url)
 
     def read_ready(self, url, max_seconds=12):
@@ -200,15 +325,37 @@ class BrowserFetcher:
         self.check()
         if not clean_url(url) or not is_portal(url, self.config.portal):
             raise FetchError('Prohlížeč je vyhrazen pouze veřejným stránkám vybraného portálu.')
-        self.http.validate_target(url)
         self.start()
-        self.http.pace(url)
+        self.service_commands()
+        self.cooperative(self.http.validate_target, url)
+        self.cooperative(self.http.pace, url)
         self.last_status, self.last_headers, self.navigation_error = 0, {}, ''
         self.manual_problem = None
         self.emit('request', url=url)
         try:
             if use_next:
-                self.page.locator('button[aria-label="Zur nächsten Seite"]').click(timeout=self.config.timeout * 1000)
+                deadline = self.clock() + self.config.timeout
+                while True:
+                    try:
+                        self.page.locator('button[aria-label="Zur nächsten Seite"]').click(timeout=250, no_wait_after=True)
+                        break
+                    except Exception:
+                        if self.clock() >= deadline:
+                            raise
+                        self.tick()
+                response = None
+            elif self.control and not self.context_factory:
+                # CDP initiates navigation without waiting for DOMContentLoaded.
+                # The ordinary readiness/CAPTCHA loop pumps commands every 200 ms.
+                if self.cdp is None:
+                    self.cdp = self.context.new_cdp_session(self.page)
+                # Schedule the navigation after Runtime.evaluate has returned;
+                # Page.navigate itself can wait on a slow response before commit.
+                self.navigation_marker = str(time.monotonic_ns())
+                self.cdp.send('Runtime.evaluate', {'expression': 'window.__webscraperNavigation = ' + json.dumps(self.navigation_marker) + '; setTimeout(() => location.assign(' + json.dumps(url) + '), 0)'})
+                deadline = self.clock() + self.config.timeout
+                while not self.last_status and self.clock() < deadline:
+                    self.tick()
                 response = None
             else:
                 response = self.page.goto(url, wait_until='domcontentloaded', timeout=self.config.timeout * 1000)
@@ -240,6 +387,10 @@ class BrowserFetcher:
                 self.context.close()
         finally:
             self.context = self.page = None
+            self.controller = self.cdp = None
+            if self.control:
+                self.control.reset()
+                self.emit('browser', **self.control.snapshot())
             if self.playwright:
                 self.playwright.stop()
                 self.playwright = None
@@ -249,18 +400,29 @@ class HybridFetcher:
     # Také přímý HTTP režim WLW je sekvenční: blokace zastaví další profily.
     serial_wlw = True
 
-    def __init__(self, config, stop, emit, folder, continue_event):
+    def __init__(self, config, stop, emit, folder, continue_event, browser_control=None):
         self.config, self.stop, self.emit = config, stop, emit
         self.folder, self.continue_event = folder, continue_event
         self.http = Fetcher(config, stop, emit)
         self.browser = None
+        self.browser_control = browser_control
+        self.owner = threading.get_ident()
+
+    def pump(self):
+        if self.browser and threading.get_ident() == self.owner:
+            self.browser.check()
+            self.browser.service_commands()
+            self.browser.page.wait_for_timeout(1)
+            self.browser.refresh_visibility()
 
     def get(self, url):
         if is_portal(url, self.config.portal) and self.config.wlw_mode == 'browser':
             if self.browser is None:
                 self.browser = BrowserFetcher(self.config, self.stop, self.emit,
-                                              self.folder, self.continue_event, self.http)
+                                              self.folder, self.continue_event, self.http, browser_control=self.browser_control)
             return self.browser.get(url)
+        if self.browser and threading.get_ident() == self.owner:
+            return self.browser.cooperative(self.http.get, url)
         return self.http.get(url)
 
     def close(self):
