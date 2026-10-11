@@ -73,7 +73,7 @@ Testy používají `tempfile` a na omezeném Windows hostu mohou skončit `Permi
 
 ## Známé hranice a otevřená práce
 
-- Vydání 1.0.0 není zveřejněné; veřejný GitHub zatím nemá stabilní Release. Workflow pro koncept je připravený v lokálních změnách, ale nebyl spuštěný na GitHubu.
+- Zdrojová implementace instalátoru a aktualizací je na `origin/main` (commit `19ca6d2`) a označena tagem `v1.0.0`. Na GitHubu byl vytvořen koncept WebScraper 1.0.0; stabilní vydání zatím není zveřejněné. Tagový workflow [38160977995](https://github.com/aiupdater/WebScraper/actions/runs/38160977995) se nespustil: GitHub zablokoval účet kvůli fakturaci. Vydání používá lokálně sestavené a ověřené artefakty; CI je potřeba zopakovat po odstranění blokace.
 - Před zákaznickým vydáním zbývá checklist `docs/DISTRIBUCE.md`: čisté Windows 10/11 bez Pythonu, chybějící WebView2, přechod mezi různými verzemi, ruční návrat ke starší verzi, import/obnova skutečného starého běhu a živé portály/CAPTCHA. Dříve zveřejněné používané přihlašovací údaje je potřeba změnit u poskytovatele; historie Git se nepřepisovala. První instalátor nemá podpis vydavatele.
 
 - Dokumentace obsahuje historické názvy a starší instalační formulace; při změnách rozlišuj funkční identifikátory portálů od značky aplikace.
