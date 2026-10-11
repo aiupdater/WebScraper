@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 import ssl
-from system.paths import APP_ROOT, config_path
+from system.paths import data_root, config_path
 
 
 class MySQLError(RuntimeError):
@@ -17,7 +17,7 @@ def normalize_email(value):
 
 
 def load_dotenv(base_path=None):
-    base = Path(base_path) if base_path else APP_ROOT / 'config'
+    base = Path(base_path) if base_path else data_root() / 'config'
     for env_name in ('.env',):
         env_file = base / env_name
         if env_file.is_file():
@@ -41,7 +41,7 @@ class MySQLSettings:
     database: str = 'dbemailapp_1'
     user: str = 'dbemailapp.1'
     port: int = 3306
-    password: str = field(default='Dbemailapp.1', repr=False)
+    password: str = field(default='', repr=False)
     tls: bool = False
     ca_file: str = ''
 

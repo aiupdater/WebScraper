@@ -1,5 +1,13 @@
 # WebScraper — dlouhodobá rozhodnutí
 
+## D-008: Zákaznická Windows distribuce a oddělená data
+
+- Datum: 11. 10. 2026
+- Stav: platí
+- Rozhodnutí: Zákaznický balíček je český per-user instalátor Inno Setup s PyInstaller onedir aplikací a přibaleným Chromiem. Programové prostředky jsou oddělené od dat v `%LOCALAPPDATA%\WebScraper`; zdrojové spouštění a CLI zachovávají původní cesty. Distribuuje se výhradně produkční UI z hlavního vstupu.
+- Důvod: Zákazník nemá spravovat Python, BAT skripty ani zdrojovou složku; aktualizace nesmí přepisovat výsledky a soukromé nastavení.
+- Důsledek: Stabilní veřejné GitHub Releases poskytují instalátor a SHA-256 manifest. Aktualizaci uživatel potvrzuje a instalace čeká na dokončení práce. Kopírování starých dat vyžaduje přehled a potvrzení bez přepisování zdroje či cíle. Odinstalace ponechává data. Build vytváří koncept vydání; čisté Windows a skutečný upgrade mezi verzemi zůstávají samostatnou vydávací branou. První vydání je bez podpisu vydavatele; přihlašovací údaje nesmí být ve zdrojích, šablonách ani balíčku.
+
 ## D-007: Samostatný prohlížeč s řízenou viditelností
 
 - Datum: 4. 10. 2026

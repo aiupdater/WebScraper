@@ -4,27 +4,28 @@ Společný kontext a dlouhodobá rozhodnutí pro vývojové chaty jsou uklizené
 [`docs/project/`](docs/project/). Kořenový [AGENTS.md](AGENTS.md) zůstává na
 technicky nutném místě, aby jeho pravidla Codex automaticky načetl pro celý repozitář.
 
-## Spuštění
+## Instalovaná aplikace pro Windows
 
-1. Při první instalaci spusťte **_INSTALOVAT.bat**.
-2. Aplikaci otevírejte pomocí **_SPUSTIT.bat**.
-3. Vlevo vyberte databázi firem **WLW.de** nebo **11880.com**, kategorie a způsob ukládání.
+Zákaznická distribuce používá jediný `WebScraper-Setup.exe` z [GitHub Releases](https://github.com/aiupdater/WebScraper/releases). Podporuje Windows 10/11 x64, nepotřebuje instalovaný Python a obsahuje Chromium. První vydání není podepsané certifikátem vydavatele.
 
-`ui/index.html` je pouze rozhraní; samostatným otevřením se Python nespustí.
-Po uspořádání souborů stačí aplikaci znovu otevřít. Existující `.venv` lze dál používat.
+1. Spusťte instalační EXE. Instalace vytvoří položku v nabídce Start; ikona na ploše je volitelná.
+2. Aplikaci otevírejte ikonou WebScraperu. V nastavení MySQL zadejte vlastní údaje, nebo zvolte lokální ukládání a vypněte kontrolu známých e-mailů.
+3. Vyberte WLW.de či 11880.com, kategorie, způsob ukládání a spusťte sběr.
+4. Při požadavku na CAPTCHA otevřete **Prohlížeč**, dokončete ověření a stiskněte **Ověřeno, pokračovat**.
 
-## První spuštění ve Windows
+**Aktualizace:** Nastavení aplikace v hlavičce zobrazuje verzi a kontrolu aktualizací. Novou verzi stáhněte a zvolte **Instalovat a restartovat**. Instalace je dostupná až po dokončení sběru a ukládání; nastavení a výsledky zachová. Automatická kontrola probíhá nejvýše jednou denně. Nová vydání se zveřejňují až po ověření instalačního balíčku.
 
-1. Rozbalte celý ZIP do vlastní složky, například `C:\WLW_Studio`. Nespouštějte soubory přímo uvnitř ZIPu.
-2. Spusťte `INSTALOVAT.bat`. Vytvoří místní `.venv` a nainstaluje balíčky stejným Pythonem, který aplikaci spouští. Je potřeba internet, Python 3.11 nebo novější a Microsoft Edge WebView2 Runtime (viz [UI.md](UI.md)).
-3. Spusťte `SPUSTIT.bat`.
-4. V poli **Kategorie** zaškrtněte požadované kategorie. Při prvním spuštění je připravená **Tiefbau**, další si můžete přidat nebo smazat. Aplikace postupně získá firemní profily ze všech vybraných kategorií. Nastavte počáteční stránku a maximální počet stránek pro každou kategorii.
-5. Pro WLW zvolte **Prohlížeč + ruční ověření** a **Chromium** (instalátor jej stáhne). Microsoft Edge / Google Chrome lze vybrat, pokud je již máte nainstalované.
-6. Zvolte výstupní složku a stiskněte **Spustit / pokračovat**. Na Windows desktopu prohlížeč startuje skrytě. Tlačítko **Prohlížeč** v levé liště zobrazuje a skrývá stejné okno; skrytí nezastaví sběr. Při odznaku **Vyžaduje ověření** otevřete prohlížeč tlačítkem, dokončete CAPTCHA a potom stiskněte **Ověřeno — pokračovat**.
+**Přechod z původní složky:** zavřete původní aplikaci i její prohlížeč. V Nastavení aplikace vyberte původní složku, zkontrolujte přehled a potvrďte **Zkopírovat data**. Existující cílové položky se nepřepisují. Import kopíruje nastavení a obsah `vysledky`; původní soubory zachová. Importovaný běh vyberte pomocí **Změnit…** v sekci Složka běhu. Stav zobrazení z původního WebView2 se nepřenáší.
 
-**Aktualizace původní verze:** zavřete aplikaci, překopírujte zdrojové soubory z balíčku do původní složky a znovu spusťte `INSTALOVAT.bat`. Ponechte své `vysledky` a `.venv`. Podrobnosti k této opravě jsou v `OPRAVA_CAPTCHA.md`.
+Program je standardně v `%LOCALAPPDATA%\Programs\WebScraper`; soukromé nastavení, výsledky a stav rozhraní jsou v `%LOCALAPPDATA%\WebScraper`. Odinstalace ponechá uživatelská data.
 
-Pokud Python není nainstalován, použijte instalátor z [python.org](https://www.python.org/downloads/windows/) s komponentami Tcl/Tk a Python Launcher. Chyba `No module named httpx` se řeší opětovným spuštěním `INSTALOVAT.bat`, nikoli instalací do náhodného jiného Pythonu.
+Podrobný návod a vydávací checklist: [Distribuce pro Windows](docs/DISTRIBUCE.md).
+
+## Spouštění ze zdrojů (vývoj)
+
+Rozbalte zdroje do vlastní složky. S Pythonem 3.11+ spusťte `_INSTALOVAT.bat`, potom `_SPUSTIT.bat`. Je potřeba Microsoft Edge WebView2 Runtime. Zdrojová verze zachovává místní `.venv`, `config`, `.ui-state` a `vysledky` v checkoutu. BAT skripty nejsou součástí zákaznického instalátoru.
+
+`ui/index.html` je pouze rozhraní; samostatným otevřením se Python nespustí. Produkční rozhraní je pouze `ui/index.html`; experimentální spouštění a `ui/lineone` nejsou součástí balíčku.
 
 ## Aktuální stav WLW a rozsah ověření
 

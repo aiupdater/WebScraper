@@ -6,6 +6,17 @@ ui-previews/
 ui/lineone/
 tests/artifacts/
 config/.env
+config/mysql.local.json
+mysql.local.json
+build/
+dist/
+release/
+.build-venv/
+.build-tools/
+.instance.lock
+.update.lock
+updates/
+logs/
 .env
 _SPUSTIT_LINEONE.bat
 categories.local.json

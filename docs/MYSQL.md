@@ -5,8 +5,8 @@ Scraper může ukládat nové kontakty přímo do MySQL nebo dál vytvářet sez
 
 ## První spuštění ve Windows
 
-1. Aktualizujte soubory aplikace a spusťte `_INSTALOVAT.bat` (doplní PyMySQL a pywebview; viz [UI.md](UI.md)).
-2. Spusťte `_SPUSTIT.bat`. Výchozí ukládání je **EmailApp (MySQL)** se zapnutým přeskakováním známých e-mailů. Připojení a načtení skupin se spustí automaticky.
+1. Nainstalujte `WebScraper-Setup.exe` podle [DISTRIBUCE.md](DISTRIBUCE.md). Při vývoji ze zdrojů použijte `_INSTALOVAT.bat`.
+2. Spusťte WebScraper ikonou v nabídce Start (ze zdrojů `_SPUSTIT.bat`). Výchozí ukládání je **EmailApp (MySQL)** se zapnutým přeskakováním známých e-mailů. Připojení a načtení skupin se spustí automaticky pouze s uloženým heslem; nová instalace heslo neobsahuje.
 3. Server `nch06.vas-server.cz`, databáze `dbemailapp_1`, uživatel `dbemailapp.1`
    a port `3306` jsou předvyplněné. Zadejte heslo a klikněte **Uložit a připojit**.
 4. Aplikace načte skupiny. Tlačítko připojení databáze aktualizuje seznam po

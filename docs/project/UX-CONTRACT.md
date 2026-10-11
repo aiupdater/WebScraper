@@ -60,3 +60,11 @@ Cílem je WCAG 2.2 AA. Každé ovládání je dostupné klávesnicí, má vidite
 ## Ověřovací brány
 
 Po implementaci musí projít celá unit sada, `tests/ui_smoke.py`, `tests/desktop_smoke.py`, `tests/browser_desktop_smoke.py`, `git diff --check` a vizuální kontrola světlého/tmavého motivu při 1320 × 850, 1366 × 768, 1000 × 650 a 900 × 560. Samostatně se ověří úspěšný bootstrap, chybějící heslo, úspěšné MySQL skupiny, chyba MySQL, timeout preloaderu, omezený pohyb a všechny stavy řízení běhu. Nasazovací brány pro prohlížeč zahrnují skutečnou CAPTCHA, Windows upozornění a změny monitorů/DPI; fixture test je nenahrazuje.
+
+## Instalace, aktualizace a import
+
+Produkční vstup instalované aplikace je WebScraper.exe; experimentální UI se nedistribuuje. Nastavení aplikace rozšiřuje současný dialog zobrazení bez jiné komponentové vrstvy. Zobrazuje verzi a stavy kontroly, dostupné verze, stahování, připravené instalace a chyby. Kontrola běží mimo preloader. Instalace vyžaduje potvrzení v existujícím dialogu, je blokovaná během sběru, MySQL a importu. Stahování může běžet během sběru. Aktualizace je nabízená textovým stavem v nastavení a indikátorem na jeho tlačítku.
+
+Import používá systémový výběr složky, zobrazí přehled a konflikty a vyžaduje potvrzení kopírování. Neprovádí automatické přepisování ani mazání. Chyby zůstávají v sekci importu; během kopírování je sběr a změna nastavení blokovaná. Po importu se obnoví kategorie a stav připojení MySQL se vrátí na nepřipojený. Stejné button, dialog, focus, toast a scroll komponenty platí i pro tyto operace.
+
+Ověření: tests/test_distribution.py, maintenance scénář v tests/ui_smoke.py a skutečný EXE smoke v tests/packaged_smoke.py. Čisté instalace a aktualizace na Windows jsou samostatná vydávací brána podle docs/DISTRIBUCE.md.

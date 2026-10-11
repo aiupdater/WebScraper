@@ -11,3 +11,5 @@ Tato složka obsahuje konfigurační soubory a šablony pro WebScraper.
 - **`requirements.txt`** – Seznam závislostí a balíčků pro Python prostředí.
 
 Aktivní nastavení proměnných prostředí patří do `config/.env`; vzor `.env.example` se sám nenačítá. Používají se názvy `MYSQLHOST`, `MYSQLPORT`, `MYSQLDATABASE`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLTLS` a `MYSQLCA_FILE`. Běžně stačí nastavení přes aplikaci.
+
+V instalované EXE verzi je aktivní konfigurace v `%LOCALAPPDATA%\WebScraper\config`, oddělená od programu. Instalační balíček nepřenáší místní nastavení ani hesla; příklady mají prázdné heslo.

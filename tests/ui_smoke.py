@@ -160,6 +160,76 @@ save_categories:async(c)=>({ok:true,categories:c})
     finally:
         page.close()
 
+def maintenance_smoke(browser, url):
+    page = browser.new_page(viewport={'width':900,'height':560}, reduced_motion='reduce')
+    errors = []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    page.add_init_script(MOCK + """
+const originalBootstrap = pywebview.api.bootstrap;
+pywebview.api.bootstrap = async()=>({...await originalBootstrap(),version:'1.0.0',installed:true});
+pywebview.api.check_updates = async()=>{events.push({type:'update',state:'available',message:'Je dostupná verze 1.1.0.',available_version:'1.1.0',notes:'Opravy a nová verze'});return {ok:true}};
+pywebview.api.download_update = async()=>{events.push({type:'update',state:'downloading',message:'Stahuji aktualizaci… 50 %',progress:50});return {ok:true}};
+pywebview.api.install_update = async()=>{window.installCalls=(window.installCalls||0)+1;return {ok:false,message:'Test: instalace odložena'}};
+pywebview.api.inspect_legacy_import = async()=>({ok:true,source:'C:/Původní aplikace',items:['config/categories.local.json','vysledky/běh'],files:3,conflicts:window.importConflicts||[]});
+pywebview.api.import_legacy_data = async()=>{events.push({type:'legacy_import',ok:true,categories:['Importovaná'],settings:{has_password:false},message:'Import dokončen. Původní soubory zachovány.'});return {ok:true}};
+""")
+    try:
+        page.goto(url)
+        expect(page.locator('#start')).to_be_enabled()
+        page.click('#preferences-toggle')
+        expect(page.locator('#app-version')).to_have_text('1.0.0')
+        page.locator('#check-updates').click()
+        expect(page.locator('#download-update')).to_be_visible()
+        expect(page.locator('#update-notes')).to_have_text('Opravy a nová verze')
+        page.locator('#download-update').click()
+        expect(page.locator('#update-progress')).to_have_attribute('value','50')
+        expect(page.locator('#check-updates')).to_be_disabled()
+        page.evaluate("events.push({type:'update',state:'ready',message:'Aktualizace je připravená.'})")
+        expect(page.locator('#install-update')).to_be_enabled()
+        page.locator('#install-update').click()
+        expect(page.locator('#confirm-cancel')).to_be_focused()
+        page.keyboard.press('Escape')
+        expect(page.locator('#confirm-dialog')).not_to_be_visible()
+        assert page.evaluate('window.installCalls||0') == 0
+        page.locator('#install-update').click()
+        page.locator('#confirm-accept').click()
+        expect(page.locator('#update-status')).to_have_text('Test: instalace odložena')
+        page.evaluate("window.importConflicts=['config/categories.local.json']")
+        page.locator('#inspect-import').click()
+        expect(page.locator('#import-status')).to_contain_text('Existující položky')
+        expect(page.locator('#execute-import')).to_be_hidden()
+        page.evaluate('window.importConflicts=[]')
+        page.locator('#inspect-import').click()
+        expect(page.locator('#execute-import')).to_be_visible()
+        page.locator('#execute-import').click()
+        expect(page.locator('#confirm-cancel')).to_be_focused()
+        page.locator('#confirm-accept').click()
+        expect(page.locator('#import-status')).to_contain_text('Import dokončen')
+        expect(page.locator('#category-summary')).to_contain_text('Importovaná')
+        for dark in (False,True):
+            page.evaluate("document.documentElement.classList.toggle('theme-dark'," + str(dark).lower() + ')')
+            for width,height in ((1320,850),(1366,768),(1000,650),(900,560)):
+                page.set_viewport_size({'width':width,'height':height})
+                page.locator('#updates-title').scroll_into_view_if_needed()
+                bounds=page.locator('#preferences-dialog').bounding_box()
+                assert bounds and bounds['x'] >= 0 and bounds['y'] >= 0 and bounds['width'] <= width
+                page.screenshot(path=str(ROOT/'tests/artifacts'/f'maintenance-{"dark" if dark else "light"}-{width}.png'))
+        page.locator('[data-close="preferences-dialog"]').last.click()
+        page.select_option('#destination', 'files')
+        page.locator('label[for="skip-existing"]').click()
+        page.click('#start')
+        page.click('#preferences-toggle')
+        expect(page.locator('#install-update')).to_be_disabled()
+        expect(page.locator('#inspect-import')).to_be_disabled()
+        expect(page.locator('#update-wait')).to_be_visible()
+        page.evaluate("events.push({type:'update',state:'error',message:'Aktualizaci nelze dokončit.'})")
+        expect(page.locator('#update-status')).to_have_text('Aktualizaci nelze dokončit.')
+        assert not errors,errors
+        print('PASS: update states, explicit confirmation/Escape, busy deferral, import conflicts/success, light/dark settings layouts')
+    finally:
+        page.close()
+
+
 def main():
     server = ThreadingHTTPServer(('127.0.0.1',0),functools.partial(SimpleHTTPRequestHandler,directory=str(ROOT/'ui')))
     threading.Thread(target=server.serve_forever,daemon=True).start()
@@ -375,6 +445,7 @@ def main():
             startup_loader_smoke(browser, f'http://127.0.0.1:{server.server_port}/')
             portal_navigation_smoke(browser)
             delayed_bridge_smoke(browser, f'http://127.0.0.1:{server.server_port}/')
+            maintenance_smoke(browser, f'http://127.0.0.1:{server.server_port}/')
             browser.close()
             print('PASS: layouts plus start, stop, resume options, use data, discard and prepare-new controls')
     finally:

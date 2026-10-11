@@ -4,6 +4,7 @@
 
 | Cesta | Účel |
 | --- | --- |
+| `DISTRIBUCE.md` | Instalátor EXE, aktualizace, import a vydávací checklist |
 | `POUZITI.md` | Podrobný návod k používání aplikace |
 | `UI.md` | Desktopové rozhraní, jeho struktura a ověření |
 | `MYSQL.md` | Nastavení a chování propojení s MySQL |

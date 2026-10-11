@@ -1,10 +1,10 @@
 # WebScraper · verze s ručním ověřením
 
-> **Nové desktopové UI ve stylu EmailApp:** světlý/tmavý režim, dynamická nastavení a samostatně posouvatelná tabulka. Po aktualizaci znovu spusťte `_INSTALOVAT.bat`. Návod a rozsah ověření: [UI.md](UI.md).
+> **Windows instalátor a aktualizace:** zákazník používá `WebScraper-Setup.exe` a ikonu aplikace. Postup a vydávací checklist: [DISTRIBUCE.md](DISTRIBUCE.md).
 
 > **Nově: propojení s FebaMont Emailapp (MySQL)** — výběr skupiny, kontrola existujících adres a přímé ukládání. Postup nastavení a rozdíly výstupů: [MYSQL.md](MYSQL.md).
 
-Přepracování pěti dodaných skriptů do jedné desktopové aplikace. Python 3.11+, primárně Windows 11. Zdroje jsou otevřené k úpravám; nejde o zkompilované EXE.
+Windows desktopová aplikace podporuje WLW.de a 11880.com. Zákaznická EXE distribuce obsahuje Python i Chromium; zdrojová varianta vyžaduje Python 3.11+.
 
 ## Výběr portálu databáze firem
 
@@ -22,7 +22,11 @@ Ochranné ověření řeší uživatel v otevřeném prohlížeči. Při skuteč
 
 Ověření 26. 9. 2026: 103 automatických testů prošlo; prošel i test rozhraní v Chromium včetně výběru portálu a POST stránkování na izolovaných testovacích stránkách. V připojeném uživatelském prohlížeči byly ověřeny první dvě stránky Tiefbau, 50 profilových odkazů na druhé stránce a otevření profilu Novus s e-mailem. Parser aplikace získal shodný e-mail i z živě staženého HTML profilu. MySQL je pokryto simulovanými integračními testy; hromadný ostrý sběr a zápis do skutečné databáze nebyly součástí ověření.
 
-## První spuštění ve Windows
+## První spuštění zákaznické verze
+
+Nainstalujte `WebScraper-Setup.exe` a spusťte WebScraper z nabídky Start. Aktualizace i import starých dat jsou v Nastavení aplikace; [podrobný postup](DISTRIBUCE.md). Nastavení MySQL si doplňte, nebo zvolte lokální soubory a vypněte kontrolu známých adres.
+
+## Spuštění ze zdrojů (vývoj)
 
 1. Rozbalte celý ZIP do vlastní složky, například `C:\WLW_Studio`. Nespouštějte soubory přímo uvnitř ZIPu.
 2. Spusťte `_INSTALOVAT.bat`. Vytvoří místní `.venv` a nainstaluje balíčky stejným Pythonem, který aplikaci spouští. Je potřeba internet, Python 3.11 nebo novější a Microsoft Edge WebView2 Runtime (viz [UI.md](UI.md)).
@@ -33,7 +37,7 @@ Ověření 26. 9. 2026: 103 automatických testů prošlo; prošel i test rozhra
 
 Při minimalizované aplikaci první výzva odešle jedno Windows upozornění; jeho zobrazení může omezit nastavení Windows. CAPTCHA sama okno neotevře. Zavření prohlížeče přeruší běh s `BROWSER_CLOSED`; použijte pokračování ve stejné složce. Pokud nelze okno bezpečně identifikovat, aplikace zpřístupní pouze svou stránku a tlačítko ji pak jen přenáší do popředí. Pokud selže i tato obnova, sběr se přeruší a nabídne pokračování ve viditelném režimu. CLI a jiné systémy zachovávají viditelný prohlížeč.
 
-**Aktualizace původní verze:** zavřete aplikaci, překopírujte zdrojové soubory z balíčku do původní složky a znovu spusťte `_INSTALOVAT.bat`. Ponechte své `vysledky` a `.venv`. Podrobnosti k této opravě jsou v `OPRAVA_CAPTCHA.md`.
+**Aktualizace zdrojové verze:** zavřete aplikaci, překopírujte zdrojové soubory z balíčku do původní složky a znovu spusťte `_INSTALOVAT.bat`. Ponechte své `vysledky` a `.venv`. Podrobnosti k této opravě jsou v `OPRAVA_CAPTCHA.md`.
 
 Pokud Python není nainstalován, použijte instalátor z [python.org](https://www.python.org/downloads/windows/) s komponentami Tcl/Tk a Python Launcher. Chyba `No module named httpx` se řeší opětovným spuštěním `_INSTALOVAT.bat`, nikoli instalací do náhodného jiného Pythonu.
 

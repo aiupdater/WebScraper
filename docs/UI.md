@@ -8,6 +8,8 @@ Lokální HTML/CSS rozhraní uvnitř Python okna pomocí pywebview 6.1. Scraper,
 
 ## Aktualizace
 
+Pro zákaznickou EXE verzi použijte [instalátor a aktualizace](DISTRIBUCE.md). Následující kroky platí pouze pro vývoj ze zdrojů.
+
 1. Zavřete aplikaci a aktualizujte zdroje včetně celé složky `ui/` a složky `system/`. Zachovejte vlastní výsledky a nastavení připojení.
 2. Znovu spusťte `_INSTALOVAT.bat`, potom `_SPUSTIT.bat`.
 3. Pokud okno hlásí chybějící WebView2, doinstalujte [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/). Chromium instalované pro scraper a WebView2 pro rozhraní jsou dvě odlišné součásti.
@@ -18,11 +20,11 @@ Lokální HTML/CSS rozhraní uvnitř Python okna pomocí pywebview 6.1. Scraper,
 - Pokud připojení k MySQL selže nebo chybí nastavení, aplikace se nezablokuje. Zpřístupní dashboard a umožní připojení opravit v nastavení. Při neobvykle dlouhém startu nabídne bezpečné pokračování do aplikace.
 - Vlevo jsou obor firem, počet stránek, výstup a složka běhu. Další parametry jsou pod rozbalovacím pokročilým nastavením.
 - Skupina se zobrazuje pouze při ukládání do EmailApp. Připojení databáze se zobrazuje při tomto výstupu nebo při zapnutí kontroly známých adres.
-- Při spuštění je vybrané **EmailApp (MySQL)** a zapnuté **Přeskočit známé e-maily**. Databáze se připojí automaticky a načte skupiny. Tlačítkem připojení lze seznam obnovit. **Nastavení připojení** předvyplní uložené heslo; prázdné heslo zachová stávající. Parametry včetně hesla se ukládají do místního `config/mysql.local.json`.
+- Při spuštění je vybrané **EmailApp (MySQL)** a zapnuté **Přeskočit známé e-maily**. Databáze se připojí automaticky jen při dostupném uloženém hesle; nová instalace požádá o doplnění údajů. Tlačítkem připojení lze seznam obnovit. **Nastavení připojení** předvyplní uložené heslo; prázdné heslo zachová stávající. Parametry včetně hesla se ukládají do místního `config/mysql.local.json`.
 - Vpravo je statistika, průběh a tabulka. Nastavení a tabulka mají vlastní posuvník; spodní výpis neodsunuje dlouhý formulář mimo okno. Minimální velikost okna je 900 × 560.
 - **Ctrl+F**, hledání a filtr usnadňují práci s posledními 500 výsledky. Kliknutí na řádek otevře detail a kopírování kontaktu. Úplné výsledky zůstávají v souborech běhu.
 - Po spuštění se nastavení uzamkne. Ruční ověření se zobrazí pouze při čekání na CAPTCHA. Po zastavení lze pokračovat, zpracovat dosud získaná data nebo běh ukončit a data zahodit. Nové kontakty se do MySQL zapíší až po dokončení nebo po volbě použití aktuálních dat.
-- Ikona měsíce/slunce přepíná vzhled. Nastavení zobrazení umožňuje omezit animace; respektována je i systémová preference omezeného pohybu. Volby vzhledu jsou v `.ui-state/`.
+- Ikona měsíce/slunce přepíná vzhled. Nastavení aplikace umožňuje omezit animace, kontrolovat a instalovat aktualizace a importovat původní nastavení a běhy; respektována je i systémová preference omezeného pohybu. Volby vzhledu jsou v `.ui-state/`.
 
 ## Původ vzhledu
 
@@ -34,7 +36,7 @@ Grafika, CSS a JavaScript jsou lokální, bez CDN. Lokální HTTP server pywebvi
 
 ## Testování
 
-`python -m unittest discover -s tests -q` — aktuálně 109 testů. Žádná živá databáze ani rozesílání.
+`python -m unittest discover -s tests -q` — aktuální výsledky jsou v `project/PROJECT_CONTEXT.md`. Žádná živá databáze ani rozesílání.
 
 `python tests/ui_smoke.py [cesta-k-chromium]` — kontrola vykreslení přes Playwright s falešným Python bridge, testovacími kontakty v doméně `.example` a lokálním serverem. Ověřuje také živé fáze preloaderu, číselný průběh a čekání na úvodní výsledek MySQL. Snímky ukládá do ignorované složky `tests/artifacts/`.
 

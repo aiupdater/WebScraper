@@ -138,7 +138,7 @@
     $('notice-text').textContent = text;
     openDialog($('notice-dialog'));
   }
-  function confirmAction(title, text, actionLabel) {
+  function confirmAction(title, text, actionLabel, intent = 'danger') {
     return new Promise(resolve => {
       const dialog = $('confirm-dialog');
       const accept = $('confirm-accept');
@@ -147,6 +147,7 @@
       $('confirm-title').textContent = title;
       $('confirm-text').textContent = text;
       accept.textContent = actionLabel;
+      accept.className = 'btn btn-' + intent;
       const finish = value => {
         accept.removeEventListener('click', onAccept);
         cancel.removeEventListener('click', onCancel);
@@ -182,6 +183,58 @@
     try { return await api[name](...args); }
     catch (_) { return {ok:false, message:'Operaci se nepodařilo dokončit. Ověřte, že aplikace stále běží.'}; }
   }
+  let maintenanceBusy = false;
+  let updateState = {state:'idle'};
+  let installedVersion = false;
+  function renderUpdate(data = updateState) {
+    updateState = data;
+    $('update-status').textContent = data.message || 'Aktualizace zatím nebyly zkontrolovány.';
+    const transferring = ['checking','downloading','installing'].includes(data.state);
+    $('check-updates').disabled = transferring || maintenanceBusy || !state.ready;
+    $('download-update').hidden = !['available','error'].includes(data.state) || !data.available_version;
+    $('download-update').disabled = transferring || maintenanceBusy;
+    $('install-update').hidden = data.state !== 'ready';
+    const busy = state.running || state.stopping || state.starting || state.dbBusy || maintenanceBusy;
+    $('install-update').disabled = busy || !installedVersion;
+    $('update-wait').hidden = data.state !== 'ready' || !busy;
+    $('update-later').hidden = !['available','ready'].includes(data.state);
+    $('update-later').disabled = !state.ready;
+    $('update-progress').hidden = data.state !== 'downloading';
+    $('update-progress').value = data.progress || 0;
+    $('update-notes').hidden = !data.notes;
+    $('update-notes').textContent = data.notes || '';
+    $('preferences-toggle').title = ['available','ready'].includes(data.state) ? 'Nastavení aplikace · dostupná aktualizace' : 'Nastavení aplikace';
+    $('preferences-toggle').classList.toggle('update-available', ['available','ready'].includes(data.state));
+    $('inspect-import').disabled = busy || !state.ready;
+    $('execute-import').disabled = busy || !state.ready;
+  }
+  async function updateAction(method) {
+    const result = await call(method);
+    if (!result.ok) $('update-status').textContent = result.message;
+  }
+  async function inspectImport() {
+    $('inspect-import').disabled = true;
+    $('execute-import').hidden = true;
+    $('import-items').hidden = true;
+    $('import-status').textContent = 'Kontroluji původní složku…';
+    const result = await call('inspect_legacy_import');
+    if (result.cancelled) $('import-status').textContent = '';
+    else if (!result.ok) $('import-status').textContent = result.message;
+    else {
+      $('import-items').replaceChildren(...result.items.map(item => { const li=document.createElement('li'); li.textContent=item; return li; }));
+      $('import-items').hidden = false;
+      $('import-status').textContent = result.conflicts.length ? 'Import nic nepřepíše. Existující položky: ' + result.conflicts.join(', ') : `${result.files} souborů z ${result.source}. Připraveno ke kopírování.`;
+      $('execute-import').hidden = result.conflicts.length > 0;
+    }
+    renderUpdate();
+  }
+  async function executeImport() {
+    if (!await confirmAction('Zkopírovat původní data?', 'Zkopíruji zobrazené nastavení a běhy. Původní soubory zůstanou zachované; existující položky nepřepíšu.', 'Zkopírovat data', 'primary')) return;
+    maintenanceBusy = true; controls();
+    $('import-status').textContent = 'Kopíruji a ověřuji data…';
+    const result = await call('import_legacy_data');
+    if (!result.ok) { maintenanceBusy=false; $('import-status').textContent=result.message; controls(); }
+  }
   function runStatus(text, tone='blue') {
     $('run-status').textContent = text;
     $('run-status').className = 'badge badge-' + tone;
@@ -202,7 +255,7 @@
     $('group').disabled = !mysql || !state.groupsLoaded || state.running || state.dbBusy;
   }
   function controls() {
-    const busy = state.running || state.stopping || state.dbBusy || state.starting || state.categoryBusy;
+    const busy = state.running || state.stopping || state.dbBusy || state.starting || state.categoryBusy || maintenanceBusy;
     for (const id of ['source-fields','destination-fields','folder-fields']) $(id).disabled = busy;
 
     const hasPausedData = !state.running && (state.resume || state.hasStoppedData) && !state.isCompleted;
@@ -252,6 +305,7 @@
     }
     if ($('discard-saved')) $('discard-saved').hidden = true;
     updateVisibility();
+    renderUpdate();
   }
   function updateStats() {
     Object.entries(state.counts).forEach(([key,value]) => $('stat-' + key).textContent = number(value));
@@ -767,6 +821,26 @@
       if (!state.isCompleted) {
         folderInfo();
       }
+    } else if (event.type === 'update') {
+      if (event.state === 'error') maintenanceBusy = false;
+      renderUpdate(event);
+      if (event.state === 'available') toast('Je dostupná nová verze. Otevřete Nastavení aplikace.');
+      controls();
+    } else if (event.type === 'legacy_import') {
+      maintenanceBusy = false;
+      $('execute-import').hidden = true;
+      $('import-status').textContent = event.message;
+      if (event.ok) {
+        state.categories=event.categories; state.selected=new Set(event.categories); renderCategories();
+        state.settings=event.settings; state.groupsLoaded=false;
+        $('group').replaceChildren(new Option('⚪ Bez skupiny (výchozí)',''));
+        updateGroupBadge();
+        if ($('db-dot')) $('db-dot').className = 'status-dot failed';
+        if ($('db-status')) $('db-status').textContent = 'Nepřipojeno';
+        $('mysql-toggle').title = 'Nastavení MySQL · Nepřipojeno';
+        toast('Původní data byla zkopírována.');
+      }
+      controls();
     } else if (event.type === 'closing') {
       state.stopping = true; controls(); runStatus('Ukládám a zavírám','amber');
       $('footer-message').textContent = 'Ukládám výsledky před zavřením okna…';
@@ -800,6 +874,9 @@
     }
     startupProgress(58, 'Načítám nastavení, kategorie a uložený běh…', 'config');
     state.ready = true; state.settings = data.settings;
+    installedVersion = Boolean(data.installed);
+    $('app-version').textContent = data.version || 'vývojová verze';
+    if (data.update) renderUpdate(data.update);
     renderBrowser(data.browser || {visibility:'off',captcha:false,pending:false,fallback:false});
     visibleBrowserRetry = Boolean(data.visible_browser_retry);
     if (data.db_connected) {
@@ -874,6 +951,17 @@
     $('db-password').focus();
   });
   $('preferences-toggle').addEventListener('click',()=> openDialog($('preferences-dialog')));
+  $('check-updates').addEventListener('click',()=> updateAction('check_updates'));
+  $('download-update').addEventListener('click',()=> updateAction('download_update'));
+  $('update-later').addEventListener('click',()=> closeDialog($('preferences-dialog')));
+  $('install-update').addEventListener('click',async()=> {
+    if (!await confirmAction('Nainstalovat aktualizaci?', 'Aplikace se zavře a po instalaci znovu otevře. Nastavení a výsledky zůstanou zachované.', 'Instalovat', 'primary')) return;
+    const result = await call('install_update');
+    if (!result.ok) $('update-status').textContent = result.message;
+    else { maintenanceBusy = true; controls(); }
+  });
+  $('inspect-import').addEventListener('click',inspectImport);
+  $('execute-import').addEventListener('click',executeImport);
   document.querySelectorAll('details').forEach(setupAnimatedDetails);
   const sidebarToggle = $('sidebar-toggle');
   const applicationShell = $('application-shell');

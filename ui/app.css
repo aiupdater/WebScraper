@@ -529,3 +529,12 @@ html.theme-dark .stat-icon.red { background:#59452d; }
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
 }
+/* Application maintenance reuses the settings dialog and shared controls. */
+.maintenance-section + .maintenance-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+.maintenance-section h3 { margin: 0 0 10px; font-size: 14px; }
+.maintenance-status { min-height: 2.8em; margin: 10px 0; overflow-wrap: anywhere; }
+.maintenance-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.maintenance-items { max-height: 140px; overflow: auto; padding-left: 20px; overflow-wrap: anywhere; }
+#update-notes { white-space: pre-wrap; max-height: 140px; overflow: auto; }
+#preferences-dialog .dialog-body { max-height: 65vh; overflow-y: auto; }
+.update-available::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--info); position: absolute; right: 4px; top: 4px; }

@@ -2,16 +2,24 @@
 import sys
 from pathlib import Path
 from system.desktop import DesktopAPI
-from system.paths import APP_ROOT
+from system.paths import APP_ROOT, data_root, configure_bundled_browser
+from system.instance import Instance, Timeout
 
 
 class App:
     def mainloop(self):
         try:
-            self._launch()
+            with Instance():
+                self._launch()
+            return 0
+        except Timeout:
+            if sys.platform == 'win32':
+                import ctypes
+                ctypes.windll.user32.MessageBoxW(None, 'WebScraper už běží nebo se právě aktualizuje.', 'WebScraper', 0x40)
             return 0
         except Exception as exc:
-            message = ('Rozhraní nelze spustit. Nejprve spusťte INSTALOVAT.bat.\n'
+            message = (('Rozhraní nelze spustit. Spusťte znovu instalátor WebScraperu.\n' if getattr(sys, 'frozen', False)
+                        else 'Rozhraní nelze spustit. Nejprve spusťte _INSTALOVAT.bat.\n') +
                        'Ve Windows je potřeba Microsoft Edge WebView2 Runtime:\n'
                        'https://developer.microsoft.com/microsoft-edge/webview2/\n\n'
                        f'Podrobnosti: {exc}')
@@ -22,10 +30,11 @@ class App:
                 print(message, file=sys.stderr)
             return 1
 
-    def _launch(self):
+    def _launch(self, verify=None):
         import webview
+        configure_bundled_browser()
         base = APP_ROOT
-        api = DesktopAPI(base)
+        api = DesktopAPI()
         target_html = base / 'ui' / 'lineone' / 'index.html' if '--lineone' in sys.argv else base / 'ui' / 'index.html'
         # Local preview UIs without the browser control retain accessible visible windows.
         api._browser_hidden_supported = '--lineone' not in sys.argv
@@ -38,9 +47,12 @@ class App:
         window.events.closing += api._on_closing
         window.events.minimized += api._on_minimized
         window.events.restored += api._on_restored
+        if getattr(sys, 'frozen', False) and verify is None:
+            window.events.loaded += lambda: api.check_updates(True)
         # The server root is ui/, never the project or its database configuration.
-        webview.start(gui='edgechromium' if sys.platform == 'win32' else None,
-                      http_server=True, private_mode=False, storage_path=str(base / '.ui-state'))
+        verification = {'func': verify, 'args': (window,)} if verify else {}
+        webview.start(**verification, gui='edgechromium' if sys.platform == 'win32' else None,
+                      http_server=True, private_mode=False, storage_path=str(data_root() / '.ui-state'))
 
 
 if __name__ == '__main__':

@@ -8,9 +8,16 @@ import queue
 import subprocess
 import sys
 import threading
+import secrets
+import shutil
+import time
+import psutil
 from system.core import Config, Pipeline
 from system.mysql_contacts import MySQLSettings, MySQLContacts
-from system.paths import APP_ROOT, config_path
+from system.paths import data_root, config_path
+from system.version import VERSION
+from system.updates import Updates, atomic_json
+from system.legacy_import import inspect_import, execute_import
 from system.browser_control import BrowserControl
 from system.notifications import notify_verification
 from system.run_cleanup import remove_run_folder
@@ -18,7 +25,10 @@ from system.run_cleanup import remove_run_folder
 class DesktopAPI:
     def __init__(self, base=None, *, settings=None, pipeline_factory=Pipeline,
                  contacts_factory=MySQLContacts):
-        self._base = Path(base or APP_ROOT).resolve()
+        self._base = data_root(base)
+        self._maintenance = False
+        self._import_preview = None
+        self._updates = Updates(self._base, self._events_put)
         self._window = None
         self._browser_control = BrowserControl()
         self._minimized = False
@@ -40,7 +50,8 @@ class DesktopAPI:
             if self._categories_path.exists():
                 self._categories = self._validate_categories(json.loads(self._categories_path.read_text(encoding='utf-8')))
             else:
-                self._write_categories(['Tiefbau'])
+                if not getattr(sys, 'frozen', False):
+                    self._write_categories(['Tiefbau'])
                 self._categories = ['Tiefbau']
         except (ValueError, OSError):
             self._categories_error = 'Nelze načíst nebo uložit categories.local.json. Zkontrolujte soubor kategorií.'
@@ -95,14 +106,118 @@ class DesktopAPI:
         return {'ok': False, 'message': text}
 
     def _busy(self):
-        return self._running or self._db_busy or self._closing
+        return self._running or self._db_busy or self._closing or self._maintenance
+
+    def _events_put(self, event):
+        self._events.put(event)
 
     def bootstrap(self):
         with self._lock:
             return {'ok': True, 'categories': list(self._categories), 'categories_error': self._categories_error, 'folder': self._folder,
                     'settings': self._public_settings(), 'settings_error': self._settings_error,
                     'running': self._running, 'groups': self._groups, 'browser': self._browser_control.snapshot(),
-                    'visible_browser_retry': self._visible_browser_retry}
+                    'visible_browser_retry': self._visible_browser_retry,
+                    'version': VERSION, 'installed': bool(getattr(sys, 'frozen', False)),
+                    'update': self._updates.snapshot()}
+
+    def check_updates(self, automatic=False):
+        return self._updates.check(automatic is True)
+
+    def download_update(self):
+        return self._updates.download()
+
+    def install_update(self):
+        with self._lock:
+            if self._busy():
+                return {'ok': False, 'message': 'Instalace počká na dokončení sběru a ukládání do databáze. Potom klikněte na Instalovat.'}
+            if not getattr(sys, 'frozen', False) or not self._window:
+                return {'ok': False, 'message': 'Instalace aktualizace je dostupná pouze v nainstalované EXE verzi.'}
+            self._maintenance = True
+        def work():
+            helper = None
+            try:
+                installer = self._updates.verified_installer()
+                folder = installer.parent
+                original = Path(sys.executable).parent / 'WebScraper-Updater.exe'
+                cached = folder / 'WebScraper-Updater.exe'
+                shutil.copy2(original, cached)
+                token = secrets.token_hex(16)
+                ready = folder / 'helper-ready.json'
+                ready.unlink(missing_ok=True)
+                atomic_json(folder / 'request.json', {'version': self._updates.release['version'],
+                            'token': token, 'executable': sys.executable,
+                            'parent_pid': os.getpid(), 'parent_created': psutil.Process().create_time()})
+                helper = subprocess.Popen([str(cached), '--request', str(folder / 'request.json')],
+                    creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0)
+                deadline = time.monotonic() + 30
+                while time.monotonic() < deadline:
+                    if helper.poll() is not None:
+                        raise RuntimeError('Pomocný proces skončil před instalací.')
+                    try:
+                        if json.loads(ready.read_text(encoding='utf-8')).get('token') == token:
+                            break
+                    except (OSError, ValueError):
+                        pass
+                    time.sleep(.1)
+                else:
+                    raise RuntimeError('Pomocný proces není připraven.')
+                with self._lock:
+                    self._maintenance = False
+                    self._closing = True
+                self._events.put({'type': 'update', 'state': 'installing', 'message': 'Zavírám aplikaci pro instalaci aktualizace…'})
+                self._window.destroy()
+            except Exception:
+                if helper is not None and helper.poll() is None:
+                    helper.terminate()
+                with self._lock:
+                    self._maintenance = False
+                self._events.put({'type': 'update', 'state': 'error', 'message': 'Instalaci nelze spustit. Aplikace zůstává otevřená; aktualizaci můžete opakovat.'})
+        self._worker = threading.Thread(target=work, name='webscraper-install', daemon=False)
+        self._worker.start()
+        return {'ok': True}
+
+    def inspect_legacy_import(self):
+        with self._lock:
+            if self._busy() or self._window is None:
+                return {'ok': False, 'message': 'Import je dostupný po dokončení probíhající operace.'}
+            self._import_preview = None
+        import webview
+        paths = self._window.create_file_dialog(webview.FileDialog.FOLDER)
+        if not paths:
+            return {'ok': True, 'cancelled': True}
+        try:
+            preview = inspect_import(paths[0], self._base)
+            with self._lock:
+                self._import_preview = preview
+            return {'ok': True, **preview}
+        except Exception as exc:
+            return self._error(exc)
+
+    def import_legacy_data(self):
+        with self._lock:
+            if self._busy() or not self._import_preview:
+                return {'ok': False, 'message': 'Nejprve vyberte původní složku a zkontrolujte přehled importu.'}
+            preview = self._import_preview
+            self._maintenance = True
+            self._import_preview = None
+        def work():
+            try:
+                execute_import(preview['source'], self._base, preview['fingerprint'])
+                categories = config_path('categories.local.json', self._base)
+                if categories.exists():
+                    self._categories = self._validate_categories(json.loads(categories.read_text(encoding='utf-8')))
+                self._settings = MySQLSettings.load(config_path('mysql.local.json', self._base))
+                self._groups = None
+                self._events.put({'type': 'legacy_import', 'ok': True, 'categories': list(self._categories),
+                    'settings': self._public_settings(), 'message': 'Import dokončen. Původní soubory zůstaly zachované. Uložený běh vyberte pomocí Změnit… ve složce výsledků.'})
+            except Exception as exc:
+                self._events.put({'type': 'legacy_import', **self._error(exc)})
+            finally:
+                with self._lock:
+                    self._maintenance = False
+        self._worker = threading.Thread(target=work, name='webscraper-import', daemon=False)
+        self._worker.start()
+        return {'ok': True}
 
     def toggle_browser_visibility(self):
         with self._lock:
@@ -383,7 +498,7 @@ class DesktopAPI:
 
     def _on_closing(self):
         with self._lock:
-            if not self._running and not self._db_busy:
+            if not self._running and not self._db_busy and not self._maintenance:
                 return True
             if self._closing:
                 return False
