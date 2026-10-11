@@ -108,26 +108,35 @@
   function setupAnimatedDetails(details) {
     const summary = details.querySelector(':scope > summary');
     if (!summary) return;
+    let animation, targetOpen = details.open;
     summary.addEventListener('click', event => {
       event.preventDefault();
-      if (details.classList.contains('is-resizing')) return;
-      if (reducedMotion()) { details.open = !details.open; return; }
-      const opening = !details.open;
       const startHeight = details.getBoundingClientRect().height;
-      if (opening) details.open = true;
-      const style = getComputedStyle(details);
-      const collapsedHeight = summary.getBoundingClientRect().height + parseFloat(style.borderTopWidth || 0) + parseFloat(style.borderBottomWidth || 0);
-      const endHeight = opening ? details.scrollHeight : collapsedHeight;
+      targetOpen = !(animation ? targetOpen : details.open);
+      if (animation) {
+        animation.onfinish = animation.oncancel = null;
+        animation.cancel();
+        animation = null;
+      }
+      details.style.height = '';
+      details.classList.remove('is-resizing');
+      details.open = targetOpen;
+      if (reducedMotion()) return;
+      // Measure the natural border box in both states; scrollHeight includes
+      // overflow and does not match the final layout after releasing height.
+      const endHeight = details.getBoundingClientRect().height;
+      details.open = true;
       details.classList.add('is-resizing');
       details.style.height = `${startHeight}px`;
-      const animation = details.animate(
+      animation = details.animate(
         {height:[`${startHeight}px`,`${endHeight}px`]},
-        {duration:opening ? 380 : 300,easing:opening ? 'cubic-bezier(.16,1,.3,1)' : 'cubic-bezier(.4,0,.2,1)'}
+        {duration:targetOpen ? 380 : 300,easing:targetOpen ? 'cubic-bezier(.16,1,.3,1)' : 'cubic-bezier(.4,0,.2,1)'}
       );
       animation.onfinish = () => {
-        if (!opening) details.open = false;
+        details.open = targetOpen;
         details.classList.remove('is-resizing');
         details.style.height = '';
+        animation = null;
       };
       animation.oncancel = animation.onfinish;
     });
@@ -613,7 +622,10 @@
     try { await navigator.clipboard.writeText(value); toast('Zkopírováno do schránky.'); }
     catch (_) { notice('Kopírování', 'Schránka není dostupná. Označte text v detailu a použijte Ctrl+C.'); }
   }
+  let tabAnimation;
   function changeTab(tab) {
+    if (state.tab === tab) return;
+    tabAnimation?.cancel();
     state.tab = tab; const results = tab === 'results';
     $('results-panel').hidden = !results; $('filters').hidden = !results; $('log-panel').hidden = results;
     $('table-hint').hidden = !results;
@@ -624,6 +636,11 @@
       $('result-count').textContent = 'Podrobný průběh a diagnostika běhu (nejnovější záznamy nahoře)';
       $('log-panel').scrollTop = 0;
     }
+    // Only the selected panel participates in layout. Animate its content
+    // without keeping the outgoing panel in the flex column.
+    tabAnimation = reducedMotion() ? null : $(results ? 'results-panel' : 'log-panel').animate(
+      {opacity:[0,1]}, {duration:180,easing:'cubic-bezier(.4,0,.2,1)'}
+    );
   }
   function appendLog(text) {
     const atTop = $('log-panel').scrollTop < 60;

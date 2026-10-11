@@ -85,6 +85,83 @@ def delayed_bridge_smoke(browser, url):
         page.close()
 
 
+def animation_smoke(browser, url):
+    """Sample real frames: disclosures cannot flash and tabs cannot share layout."""
+    page = browser.new_page(reduced_motion='no-preference')
+    page.add_init_script(MOCK)
+    try:
+        page.goto(url)
+        expect(page.locator('#startup-loader')).to_have_count(0, timeout=5000)
+        for dark, width, height in [(False,1320,850),(True,900,560)]:
+            page.set_viewport_size(dict(width=width, height=height))
+            page.evaluate('(dark) => document.documentElement.classList.toggle("theme-dark", dark)', dark)
+            for opening in [True, False]:
+                frames = page.evaluate("""async () => {
+                    const el = document.querySelector('#advanced'), content = el.querySelector('.advanced-content');
+                    const frames = [], start = performance.now();
+                    el.querySelector('summary').click();
+                    await new Promise(resolve => {
+                        function sample() {
+                            frames.push({height:el.getBoundingClientRect().height, opacity:Number(getComputedStyle(content).opacity)});
+                            if (performance.now() - start < 750) requestAnimationFrame(sample); else resolve();
+                        }
+                        requestAnimationFrame(sample);
+                    });
+                    return frames;
+                }""")
+                assert all(frame['opacity'] == 1 for frame in frames), frames
+                heights = [frame['height'] for frame in frames]
+                direction = 1 if opening else -1
+                assert all(direction * (b-a) >= -1 for a,b in zip(heights,heights[1:])), heights
+                assert page.locator('#advanced').evaluate('el => el.open') == opening
+            page.evaluate("""async () => {
+                const summary = document.querySelector('#advanced > summary');
+                summary.click(); await new Promise(r => setTimeout(r,80)); summary.click();
+                await new Promise(r => setTimeout(r,80)); summary.click();
+            }""")
+            expect(page.locator('#advanced')).not_to_have_class(re.compile(r'\bis-resizing\b'), timeout=1500)
+            assert page.locator('#advanced').evaluate('el => el.open')
+            page.locator('#advanced > summary').click()
+            expect(page.locator('#advanced')).not_to_have_attribute('open', '', timeout=1500)
+            for target in ['log', 'results']:
+                frames = page.evaluate("""async target => {
+                    document.getElementById(target+'-tab').click();
+                    const frames = [], start = performance.now();
+                    await new Promise(resolve => {
+                        function sample() {
+                            const active = document.getElementById(target+'-panel');
+                            const other = document.getElementById((target==='log'?'results':'log')+'-panel');
+                            frames.push({height:active.getBoundingClientRect().height, otherHeight:other.getBoundingClientRect().height});
+                            if (performance.now()-start < 400) requestAnimationFrame(sample); else resolve();
+                        }
+                        requestAnimationFrame(sample);
+                    });
+                    return frames;
+                }""", target)
+                assert all(frame['otherHeight'] == 0 for frame in frames), frames
+                heights = [frame['height'] for frame in frames]
+                assert max(heights)-min(heights) <= 1, heights
+            page.evaluate("document.querySelector('#log-tab').click(); document.querySelector('#results-tab').click(); document.querySelector('#log-tab').click()")
+            expect(page.locator('#log-tab')).to_have_attribute('aria-selected', 'true')
+            expect(page.locator('#results-panel')).to_be_hidden()
+            page.locator('#log-tab').press('ArrowLeft')
+            expect(page.locator('#results-tab')).to_be_focused()
+        page.emulate_media(reduced_motion='reduce')
+        page.locator('#advanced > summary').click()
+        assert page.locator('#advanced').evaluate('el => el.open && !el.classList.contains("is-resizing")')
+        page.locator('#log-tab').click()
+        assert not page.locator('#log-panel').evaluate('el => el.getAnimations().some(a => a.playState === "running")')
+        page.emulate_media(reduced_motion='no-preference')
+        page.evaluate('document.documentElement.classList.add("motion-reduced")')
+        page.locator('#advanced > summary').click()
+        assert page.locator('#advanced').evaluate('el => !el.open && !el.classList.contains("is-resizing")')
+        page.locator('#results-tab').click()
+        assert not page.locator('#results-panel').evaluate('el => el.getAnimations().some(a => a.playState === "running")')
+        print('PASS: stable disclosure/tab animation frames, interruption, keyboard and reduced motion')
+    finally:
+        page.close()
+
+
 def startup_loader_smoke(browser, url):
     """Startup reports live phases and waits for the initial MySQL result."""
     page = browser.new_page(reduced_motion='no-preference')
@@ -443,6 +520,7 @@ def main():
             assert not errors,errors
             print('PASS: category column, category search, detail page numbers and responsive layouts', flush=True)
             startup_loader_smoke(browser, f'http://127.0.0.1:{server.server_port}/')
+            animation_smoke(browser, f'http://127.0.0.1:{server.server_port}/')
             portal_navigation_smoke(browser)
             delayed_bridge_smoke(browser, f'http://127.0.0.1:{server.server_port}/')
             maintenance_smoke(browser, f'http://127.0.0.1:{server.server_port}/')

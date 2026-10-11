@@ -57,6 +57,8 @@ Používají se pouze vlastní `<dialog>` komponenty s titulkem, popisem, Escape
 
 Cílem je WCAG 2.2 AA. Každé ovládání je dostupné klávesnicí, má viditelný focus a minimálně textový nebo přístupný název. Animace jsou významové, krátké a vypnutelné pomocí uživatelské volby i `prefers-reduced-motion`.
 
+Rozbalovací nastavení používá jedinou animaci skutečné výšky bez dodatečného vyblednutí obsahu. Kliknutí během přechodu změní směr z aktuální výšky. Záložky Výsledky/Protokol mají v rozložení vždy pouze vybraný panel; krátce se animuje jeho průhlednost. Filtry a patička se přepnou současně, bez dočasného rozdělení prostoru mezi oba panely. Klávesnicové ovládání a omezený pohyb používají stejné cílové stavy.
+
 ## Ověřovací brány
 
 Po implementaci musí projít celá unit sada, `tests/ui_smoke.py`, `tests/desktop_smoke.py`, `tests/browser_desktop_smoke.py`, `git diff --check` a vizuální kontrola světlého/tmavého motivu při 1320 × 850, 1366 × 768, 1000 × 650 a 900 × 560. Samostatně se ověří úspěšný bootstrap, chybějící heslo, úspěšné MySQL skupiny, chyba MySQL, timeout preloaderu, omezený pohyb a všechny stavy řízení běhu. Nasazovací brány pro prohlížeč zahrnují skutečnou CAPTCHA, Windows upozornění a změny monitorů/DPI; fixture test je nenahrazuje.

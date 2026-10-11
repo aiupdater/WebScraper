@@ -21,6 +21,7 @@ Windows desktopová aplikace získává firemní profily z WLW.de a 11880.com, d
 - Při startu je pracovní plocha skrytá preloaderem, který zobrazuje živou fázi, procenta a progress bar. Čeká na Python bootstrap a úvodní výsledek EmailApp/MySQL; chybějící heslo nebo chyba MySQL zpřístupní aplikaci a nabídnou opravu místo trvalého zablokování.
 - Levá ikonová lišta obsahuje nastavení a tlačítko Prohlížeč. Tlačítko přepíná stejné okno bez zastavení sběru; stav potvrzuje vlastnické vlákno. CAPTCHA má samostatný odznak a okno neotevírá; při minimalizaci aplikace první výzva zkusí jeden toast. Bez ověřeného HWND se obnoví vlastní stránka přes CDP, při neúspěchu se zachová běh a nabídne viditelné pokračování.
 - Jednotná motion vrstva v `ui/app.css` a `ui/app.js` animuje otevření i zavření dialogů a backdropu, toast zprávy, dynamické panely a změnu šířky nastavení. Používá nativní CSS/Web Animations API bez externí runtime závislosti a respektuje systémové i uživatelské omezení pohybu.
+- Rozbalovací nastavení měří přirozenou výšku v obou stavech a dovoluje změnit směr během animace. Výsledky/Protokol přepínají rozložení okamžitě a animují pouze průhlednost vybraného panelu; oba panely se během přechodu nedělí o výšku.
 - `config/` obsahuje závislosti a bezpečné šablony bez hesla. Lokální `config/mysql.local.json` je ignorovaný a nesmí se sdílet; přihlašovací údaje zůstávají na disku uživatele. Nová instalace nemá výchozí databázové heslo.
 - `vysledky/`, `.ui-state/`, `.venv/` a testovací dočasné adresáře jsou místní provozní stav, nikoli zdrojová pravda projektu.
 
@@ -54,6 +55,7 @@ Testy používají `tempfile` a na omezeném Windows hostu mohou skončit `Permi
 
 ## Aktuální stav ověření
 
+- Oprava animací dne 11. 10. 2026: prošlo 161 unit testů, UI smoke včetně kontroly jednotlivých snímků rozbalování a záložek, rychlého přepínání, klávesnice a obou voleb omezeného pohybu. Skutečný zobrazený WebView2 ověřil stabilní výšku záložek a otevření/zavření nastavení. Oprava je ve zdrojích; instalátor ani nové vydání nebyly sestavené.
 - Dne 11. 10. 2026 prošlo 161 unit testů v projektovém `.venv` i build Pythonu 3.11, rozšířený UI smoke (aktualizace/import, potvrzení a Escape, konflikty, busy blokování, světlý/tmavý motiv a čtyři velikosti) a skutečný zdrojový WebView2 smoke. Browser desktop smoke prošel pro Chromium a Chrome; Edge kanál chybí.
 - Sestavený `release/WebScraper-Setup.exe` 1.0.0 obsahuje produkční UI a Chromium. Skutečné EXE prošlo v izolované české cestě bez Pythonu/Playwrightu v PATH: WebView2, bootstrap, datové cesty, nový bridge a Chromium pro oba portály na offline fixtures včetně zobrazení/skrytí. Diagnostika sama izoluje data a databázové proměnné prostředí.
 - Izolovaný instalační test na aktuálním Windows hostu prošel: per-user instalace, zástupce Start, běh instalovaného EXE, skutečný zabalený updater (handshake, čekání, instalace, restart), reinstalace stejné verze a odinstalace se zachováním nastavení/výsledků. Nejde o čistý OS ani upgrade mezi dvěma verzemi. Důkazy jsou v ignorovaných `tests/artifacts/packaged-smoke.json`, `installer-smoke.json` a UI náhledech.

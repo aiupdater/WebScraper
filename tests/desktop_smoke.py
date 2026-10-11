@@ -70,6 +70,32 @@ def main():
                 # while its window is hidden. Password clearing is covered by
                 # ui_smoke.py in a rendered browser page.
                 window.evaluate_js("document.querySelector('#settings-dialog').close()")
+                until("!document.querySelector('#settings-dialog').open")
+                window.show()
+                window.evaluate_js("""window.animationFrames = []; window.animationChecked = false;
+                    document.querySelector('#log-tab').click();
+                    const animationStart = performance.now();
+                    function sampleTab() {
+                        window.animationFrames.push({
+                            hiddenHeight:document.querySelector('#results-panel').getBoundingClientRect().height,
+                            height:document.querySelector('#log-panel').getBoundingClientRect().height
+                        });
+                        if (performance.now()-animationStart < 400) requestAnimationFrame(sampleTab);
+                        else window.animationChecked = true;
+                    }
+                    requestAnimationFrame(sampleTab);
+                """)
+                until('window.animationChecked')
+                frames = window.evaluate_js('window.animationFrames')
+                assert frames and all(frame['hiddenHeight'] == 0 for frame in frames), frames
+                heights = [frame['height'] for frame in frames]
+                assert max(heights)-min(heights) <= 1, heights
+                window.evaluate_js("document.querySelector('#results-tab').click(); document.querySelector('#advanced > summary').click()")
+                until("document.querySelector('#advanced').open && !document.querySelector('#advanced').classList.contains('is-resizing')")
+                assert window.evaluate_js("getComputedStyle(document.querySelector('.advanced-content')).opacity") == '1'
+                window.evaluate_js("document.querySelector('#advanced > summary').click()")
+                until("!document.querySelector('#advanced').open")
+                print('PASS: skutečný zobrazený WebView2, stabilní přepnutí záložek a rozbalení nastavení')
                 print('PASS: skutečný WebView2, Python bootstrap, oba portály, nová/vybraná složka a nastavení MySQL')
             except Exception as exc:
                 failures.append(exc)
